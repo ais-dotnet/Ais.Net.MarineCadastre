@@ -184,7 +184,7 @@
           "Ais.Net.Models": "[1.1.0, )"
         }
       },
-      "ais.net.marinecadastre.tracks": {
+      "ais.net.marinecadastre.gis": {
         "type": "Project",
         "dependencies": {
           "Ais.Net.Models": "[1.1.0, )",

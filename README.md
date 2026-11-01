@@ -3,7 +3,7 @@
 Readers for the archived AIS data published by [MarineCadastre.gov](https://hub.marinecadastre.gov/pages/vesseltraffic) (NOAA / BOEM), in two packages:
 
 - **Ais.Net.MarineCadastre** reads the daily vessel-traffic CSV files and converts each row into [Ais.Net.Models](https://github.com/ais-dotnet/Ais.Net.Models) message types, so the same code that consumes a live [Ais.Net.Receiver](https://github.com/ais-dotnet/Ais.Net.Receiver) stream can run over years of archived US coastal traffic.
-- **Ais.Net.MarineCadastre.Tracks** reads the monthly AIS Vessel Tracks GeoPackage files as an `IObservable<VesselTrack>`: one vessel's path over part of a day, with its static data. See [Vessel tracks](#vessel-tracks).
+- **Ais.Net.MarineCadastre.Gis** reads the GIS products published alongside: the monthly AIS Vessel Tracks GeoPackage as an `IObservable<VesselTrack>`, one vessel's path over part of a day with its static data, and the yearly AIS Vessel Transit Counts GeoTIFF as an `IObservable` of cells or tiles, with point lookups. Neither needs GDAL. See [Vessel tracks](#vessel-tracks) and [Transit counts](#transit-counts).
 
 ## Usage
 
@@ -68,7 +68,7 @@ dotnet run -c Release --project Solutions/Ais.Net.MarineCadastre.Benchmarks -- -
 
 MarineCadastre also publishes a monthly **AIS Vessel Tracks** product: a [GeoPackage](https://www.geopackage.org/) (an SQLite database) holding one row per vessel track, where a track is one vessel's path over part of one day as a `MULTILINESTRING` in WGS84 with the vessel's static data alongside. The January 2026 file is 3.9 GB and holds 1.19 million tracks with 217 million vertices. The vertices are the same positions as the daily CSV rows, with consecutive repeats removed and the line cut at midnight and at gaps, but they are stored as a plain 2D line, so individual vertices have no timestamp. Only the track's start and end are known.
 
-`Ais.Net.MarineCadastre.Tracks` reads these files:
+`Ais.Net.MarineCadastre.Gis` reads these files:
 
 ```csharp
 using System.Reactive.Linq;
@@ -106,6 +106,49 @@ Stepping SQLite through the same rows without reading any column takes 3.9 s, so
 ```powershell
 dotnet run -c Release --project Solutions/Ais.Net.MarineCadastre.Benchmarks -- --filter *VesselTrack* --job short
 ```
+
+## Transit counts
+
+MarineCadastre's yearly **AIS Vessel Transit Counts** product is a GeoTIFF raster: a grid of 100 m cells in Web Mercator, each holding how many vessel transits crossed it in the year. A transit is one passage of one vessel through a cell, however many position reports it sent there, so this is a density product rather than a message archive. The 2025 file is a 534 MiB BigTIFF of 360,676 × 56,286 cells (20 billion) in 512-cell LZW tiles with seven Deflate overviews, of which 371 million cells hold data and the rest are NoData.
+
+`Ais.Net.MarineCadastre.Gis` reads it without GDAL:
+
+```csharp
+using Ais.Net.MarineCadastre;
+using Ais.Net.Models.Abstractions;
+
+using TransitCountRaster raster = MarineCadastreTransitCountReader.Open("ais-transit-count-2025.tif");
+
+uint underSeattle = raster.CountAt(new Position(47.60, -122.34));
+
+TransitCountReaderOptions pugetSound = new()
+{
+    Bounds = new BoundingBox(West: -122.6, South: 47.4, East: -122.2, North: 47.8),
+    MinimumTransits = 1000,
+};
+
+IDisposable subscription = raster.Observe(pugetSound)
+    .Subscribe(cell => Console.WriteLine($"{cell.Centre.Latitude:F4},{cell.Centre.Longitude:F4}: {cell.Transits}"));
+```
+
+`Observe` streams the cells that hold data as `TransitCell` values (column, row, centre `Position`, count), tile by tile from north-west to south-east, on the same cold-observable terms as the tracks reader. `ObserveTiles` streams `TransitTile` values instead, a rectangle of counts with its geographic bounds, for consumers that want the grid. `Read` and `ReadTiles` are the pull-based twins, and the static `MarineCadastreTransitCountReader.Observe(path)` opens and closes the file per subscription. `CountAt` is the cheap path for a point: one tile read, cached for the next lookup in the same tile.
+
+Options are `Bounds` (only tiles touching the box are read; cells are kept when their centre is inside), `Level` (0 is the exact 100 m grid; each overview doubles the cell and is resampled by whatever built the file) and `MinimumTransits`. `Extent`, `Dimensions`, `CellSize`, `NoData` and the band `Statistics` GDAL stored in the file are exposed on the raster. Tiles that hold no data are skipped without decoding once one has been seen, since identical content compresses to identical bytes.
+
+Two caveats the API cannot hide. Cells are 100 m in Web Mercator metres, which shrink with latitude, so a cell at 47°N is about 68 m across on the water and counts are not per equal area. And the 2025 file's extent runs from 174°W east to 150°E but only from 10°N to 51.7°N, so it leaves out most of Alaska.
+
+The reader handles the file as published and the nearby variations: classic TIFF or BigTIFF, either byte order, tiles or strips, no compression, LZW or Deflate, the horizontal-differencing predictor, 8, 16 or 32-bit integer cells, Web Mercator declared by EPSG code or as ArcGIS's user-defined CRS, or geographic coordinates. Other projections are refused with the CRS named.
+
+Measured on the 2025 file on the same desktop:
+
+| Operation | Result | Elapsed |
+|---|---|---|
+| `CountAt`, four lookups in different tiles | one 70 KB tile each | 18 ms in total |
+| Puget Sound box, `Read` | 116,153 cells | 0.04 s |
+| Whole file, `Read` or `Observe` | 371,149,894 cells; count, maximum and mean match the stored statistics exactly | 23 s |
+| Whole file, `ReadTiles` | 7,643 non-empty tiles, 2 billion cells | 13 s |
+
+The whole-file read allocates about 1 MiB in total and peaks at 45 MiB of working set, since `TransitCell` is a struct and tiles decode into one reused buffer. The ten seconds between the tile and cell figures is the per-cell scan of two billion decoded values and the Web Mercator conversion of the 371 million centres.
 
 ## Licenses
 

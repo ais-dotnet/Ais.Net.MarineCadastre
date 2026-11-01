@@ -22,7 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ais.Net.MarineCadastre\Ais.Net.MarineCadastre.csproj" />
-    <ProjectReference Include="..\Ais.Net.MarineCadastre.Tracks\Ais.Net.MarineCadastre.Tracks.csproj" />
+    <ProjectReference Include="..\Ais.Net.MarineCadastre.Gis\Ais.Net.MarineCadastre.Gis.csproj" />
   </ItemGroup>
 
 </Project>

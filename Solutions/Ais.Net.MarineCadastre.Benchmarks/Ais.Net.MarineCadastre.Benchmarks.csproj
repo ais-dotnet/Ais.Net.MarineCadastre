@@ -21,12 +21,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ais.Net.MarineCadastre\Ais.Net.MarineCadastre.csproj" />
-    <ProjectReference Include="..\Ais.Net.MarineCadastre.Tracks\Ais.Net.MarineCadastre.Tracks.csproj" />
+    <ProjectReference Include="..\Ais.Net.MarineCadastre.Gis\Ais.Net.MarineCadastre.Gis.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The GeoPackage fixture builder is shared with the Specs project rather than duplicated. -->
+    <!-- The GeoPackage and GeoTIFF fixture builders are shared with the Specs project rather than duplicated. -->
     <Compile Include="..\Ais.Net.MarineCadastre.Specs\TestSupport\GeoPackageBuilder.cs" Link="TestSupport\GeoPackageBuilder.cs" />
+    <Compile Include="..\Ais.Net.MarineCadastre.Specs\TestSupport\GeoTiffBuilder.cs" Link="TestSupport\GeoTiffBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup>

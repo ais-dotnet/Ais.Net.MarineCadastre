@@ -12,10 +12,10 @@
 
   <PropertyGroup>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <PackageDescription>Reads the monthly AIS Vessel Tracks GeoPackage files published by MarineCadastre.gov (NOAA / BOEM) as an IObservable of vessel tracks, each a sequence of Ais.Net.Models positions with the vessel's static data. Sponsored by endjin.</PackageDescription>
-    <PackageTags>ais;marinecadastre;noaa;geopackage;gpkg;sqlite;tracks;marine;gis;rx;endjin</PackageTags>
+    <PackageDescription>Reads the GIS products MarineCadastre.gov (NOAA / BOEM) publishes alongside its AIS archives: the monthly AIS Vessel Tracks GeoPackage as an IObservable of vessel tracks, each a sequence of Ais.Net.Models positions with the vessel's static data, and the yearly AIS Vessel Transit Counts GeoTIFF as an IObservable of cells or tiles. No GDAL required. Sponsored by endjin.</PackageDescription>
+    <PackageTags>ais;marinecadastre;noaa;geopackage;gpkg;geotiff;sqlite;tracks;transit-counts;marine;gis;rx;endjin</PackageTags>
     <PackageReleaseNotes>
-      Initial release: observable and enumerable readers over the AIS Vessel Tracks GeoPackage, with bounding-box, time and MMSI filters.
+      Initial release: observable and enumerable readers over the AIS Vessel Tracks GeoPackage (bounding-box, time and MMSI filters) and the AIS Vessel Transit Counts GeoTIFF (point lookup, cells and tiles, bounding-box and level filters).
     </PackageReleaseNotes>
   </PropertyGroup>
 

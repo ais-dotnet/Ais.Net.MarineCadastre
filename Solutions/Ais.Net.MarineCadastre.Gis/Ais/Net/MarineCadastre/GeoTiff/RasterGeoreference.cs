@@ -1,0 +1,92 @@
+// <copyright file="RasterGeoreference.cs" company="Endjin Limited">
+// Copyright (c) Endjin Limited. All rights reserved.
+// </copyright>
+
+using Ais.Net.Models.Abstractions;
+
+namespace Ais.Net.MarineCadastre.GeoTiff;
+
+/// <summary>
+/// The coordinate reference systems a transit-count raster may use.
+/// </summary>
+internal enum RasterProjection
+{
+    /// <summary>Longitude and latitude in degrees (EPSG:4326 and relatives).</summary>
+    Geographic,
+
+    /// <summary>WGS 84 / Pseudo-Mercator, EPSG:3857, in metres on the sphere.</summary>
+    WebMercator,
+}
+
+/// <summary>
+/// Maps between raster cells, model coordinates and geographic positions for a north-up raster with
+/// square-ish cells and no rotation, which is the only kind GeoTIFF tiepoint-and-scale georeferencing
+/// describes.
+/// </summary>
+/// <param name="Projection">The model coordinate system.</param>
+/// <param name="OriginX">Model X of the outer edge of the left column.</param>
+/// <param name="OriginY">Model Y of the outer edge of the top row.</param>
+/// <param name="CellWidth">Model units per column, positive.</param>
+/// <param name="CellHeight">Model units per row, positive; rows go down as Y goes down.</param>
+internal sealed record RasterGeoreference(RasterProjection Projection, double OriginX, double OriginY, double CellWidth, double CellHeight)
+{
+    private const double EarthRadius = 6378137.0;
+    private const double MaxMercatorLatitude = 85.05112878;
+
+    /// <summary>
+    /// Converts a geographic position to model coordinates.
+    /// </summary>
+    /// <param name="position">The position.</param>
+    /// <returns>The model coordinates.</returns>
+    public (double X, double Y) ToModel(Position position)
+    {
+        if (this.Projection == RasterProjection.Geographic)
+        {
+            return (position.Longitude, position.Latitude);
+        }
+
+        double latitude = Math.Clamp(position.Latitude, -MaxMercatorLatitude, MaxMercatorLatitude);
+        double x = EarthRadius * position.Longitude * Math.PI / 180;
+        double y = EarthRadius * Math.Log(Math.Tan((Math.PI / 4) + (latitude * Math.PI / 360)));
+        return (x, y);
+    }
+
+    /// <summary>
+    /// Converts model coordinates to a geographic position.
+    /// </summary>
+    /// <param name="x">Model X.</param>
+    /// <param name="y">Model Y.</param>
+    /// <returns>The position.</returns>
+    public Position ToPosition(double x, double y)
+    {
+        if (this.Projection == RasterProjection.Geographic)
+        {
+            return new Position(y, x);
+        }
+
+        double longitude = x / EarthRadius * 180 / Math.PI;
+        double latitude = Math.Atan(Math.Sinh(y / EarthRadius)) * 180 / Math.PI;
+        return new Position(latitude, longitude);
+    }
+
+    /// <summary>
+    /// Gets the geographic box covering a rectangle of cells at a given cell size.
+    /// </summary>
+    /// <param name="firstColumn">The leftmost column.</param>
+    /// <param name="firstRow">The top row.</param>
+    /// <param name="columns">How many columns.</param>
+    /// <param name="rows">How many rows.</param>
+    /// <param name="cellWidth">Model units per column at this level.</param>
+    /// <param name="cellHeight">Model units per row at this level.</param>
+    /// <returns>The box.</returns>
+    public BoundingBox CellBounds(long firstColumn, long firstRow, long columns, long rows, double cellWidth, double cellHeight)
+    {
+        double west = this.OriginX + (firstColumn * cellWidth);
+        double east = this.OriginX + ((firstColumn + columns) * cellWidth);
+        double north = this.OriginY - (firstRow * cellHeight);
+        double south = this.OriginY - ((firstRow + rows) * cellHeight);
+        Position southWest = this.ToPosition(west, south);
+        Position northEast = this.ToPosition(east, north);
+        return new BoundingBox(southWest.Longitude, southWest.Latitude, northEast.Longitude, northEast.Latitude);
+    }
+}
