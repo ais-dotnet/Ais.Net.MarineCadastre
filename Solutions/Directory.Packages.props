@@ -1,0 +1,19 @@
+<Project>
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup Label="Ais.Net.MarineCadastre">
+    <PackageVersion Include="Ais.Net.Models" Version="1.1.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Ais.Net.MarineCadastre.Specs">
+    <PackageVersion Include="Shouldly" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Ais.Net.MarineCadastre.Benchmarks">
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="Endjin.Conventions.props" />
+  </Folder>
+  <Project Path="Ais.Net.MarineCadastre/Ais.Net.MarineCadastre.csproj" />
+  <Project Path="Ais.Net.MarineCadastre.Specs/Ais.Net.MarineCadastre.Specs.csproj" />
+  <Project Path="Ais.Net.MarineCadastre.Benchmarks/Ais.Net.MarineCadastre.Benchmarks.csproj" />
+</Solution>

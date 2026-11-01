@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="$(MSBuildThisFileDirectory)..\Endjin.Conventions.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageDescription>Reads the archived AIS vessel-traffic CSV files published by MarineCadastre.gov (NOAA / BOEM) and converts each row into Ais.Net.Models message types, so the same code that consumes a live Ais.Net.Receiver stream can run over years of archived US coastal traffic. Sponsored by endjin.</PackageDescription>
+    <PackageTags>ais;marinecadastre;noaa;csv;marine;gis;endjin</PackageTags>
+    <PackageReleaseNotes>
+      Initial release: streaming reader from MarineCadastre CSV to Ais.Net.Models messages, with static-data de-duplication per vessel.
+    </PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ais.Net.Models" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ais.Net.MarineCadastre.Specs" />
+    <InternalsVisibleTo Include="Ais.Net.MarineCadastre.Benchmarks" />
+  </ItemGroup>
+
+</Project>
