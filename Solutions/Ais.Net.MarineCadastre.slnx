@@ -6,6 +6,7 @@
     <File Path="Endjin.Conventions.props" />
   </Folder>
   <Project Path="Ais.Net.MarineCadastre/Ais.Net.MarineCadastre.csproj" />
+  <Project Path="Ais.Net.MarineCadastre.Tracks/Ais.Net.MarineCadastre.Tracks.csproj" />
   <Project Path="Ais.Net.MarineCadastre.Specs/Ais.Net.MarineCadastre.Specs.csproj" />
   <Project Path="Ais.Net.MarineCadastre.Benchmarks/Ais.Net.MarineCadastre.Benchmarks.csproj" />
 </Solution>

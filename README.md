@@ -1,6 +1,9 @@
 # Ais.Net.MarineCadastre
 
-Reads the archived AIS vessel-traffic CSV files published by [MarineCadastre.gov](https://hub.marinecadastre.gov/pages/vesseltraffic) (NOAA / BOEM) and converts each row into [Ais.Net.Models](https://github.com/ais-dotnet/Ais.Net.Models) message types, so the same code that consumes a live [Ais.Net.Receiver](https://github.com/ais-dotnet/Ais.Net.Receiver) stream can run over years of archived US coastal traffic.
+Readers for the archived AIS data published by [MarineCadastre.gov](https://hub.marinecadastre.gov/pages/vesseltraffic) (NOAA / BOEM), in two packages:
+
+- **Ais.Net.MarineCadastre** reads the daily vessel-traffic CSV files and converts each row into [Ais.Net.Models](https://github.com/ais-dotnet/Ais.Net.Models) message types, so the same code that consumes a live [Ais.Net.Receiver](https://github.com/ais-dotnet/Ais.Net.Receiver) stream can run over years of archived US coastal traffic.
+- **Ais.Net.MarineCadastre.Tracks** reads the monthly AIS Vessel Tracks GeoPackage files as an `IObservable<VesselTrack>`: one vessel's path over part of a day, with its static data. See [Vessel tracks](#vessel-tracks).
 
 ## Usage
 
@@ -59,6 +62,49 @@ Measured on the 1 January 2026 daily file (828 MiB, 8.5 million rows) on a deskt
 ```powershell
 $env:AIS_NET_MARINECADASTRE_CSV = "D:\data\AIS_2026_01_01.csv"
 dotnet run -c Release --project Solutions/Ais.Net.MarineCadastre.Benchmarks -- --filter *
+```
+
+## Vessel tracks
+
+MarineCadastre also publishes a monthly **AIS Vessel Tracks** product: a [GeoPackage](https://www.geopackage.org/) (an SQLite database) holding one row per vessel track, where a track is one vessel's path over part of one day as a `MULTILINESTRING` in WGS84 with the vessel's static data alongside. The January 2026 file is 3.9 GB and holds 1.19 million tracks with 217 million vertices. The vertices are the same positions as the daily CSV rows, with consecutive repeats removed and the line cut at midnight and at gaps, but they are stored as a plain 2D line, so individual vertices have no timestamp. Only the track's start and end are known.
+
+`Ais.Net.MarineCadastre.Tracks` reads these files:
+
+```csharp
+using System.Reactive.Linq;
+using Ais.Net.MarineCadastre;
+
+VesselTrackReaderOptions pugetSound = new()
+{
+    Bounds = new BoundingBox(West: -122.6, South: 47.4, East: -122.2, North: 47.8),
+    From = new DateTimeOffset(2026, 1, 10, 0, 0, 0, TimeSpan.Zero),
+    To = new DateTimeOffset(2026, 1, 11, 0, 0, 0, TimeSpan.Zero),
+};
+
+IDisposable subscription = MarineCadastreTrackReader.Observe("AISVesselTracks2026-01.gpkg", pugetSound)
+    .Where(track => track.ShipType == ShipType.TankerAll)
+    .Subscribe(track => Console.WriteLine($"{track.Mmsi} {track.VesselName}: {track.Points.Count} positions over {track.Duration}"));
+```
+
+`Observe` returns a cold observable: each subscription opens the file read-only, reads on a thread-pool thread, emits tracks in file order and completes; disposing the subscription stops the read, and failures arrive through `OnError`. `Read` returns the same tracks as a lazy `IEnumerable<VesselTrack>` for pull-based code.
+
+A `VesselTrack` has the row id, MMSI, start and end times (UTC), duration, the positions as `IReadOnlyList<Position>`, their bounding `Envelope`, and the static columns: vessel name, call sign, IMO number, ship type (from `vessel_type`, falling back to `cargo`) and MarineCadastre's name for it, navigation status, length, width, draught, cargo code and transceiver class. It implements the Ais.Net.Models `IVesselIdentity`, `IVesselName`, `ICallSign`, `IShipType` and `IVesselNavigationStatus` interfaces. Empty columns are `null`, except where an interface needs a value, when the AIS "not available" value is used.
+
+The filters in `VesselTrackReaderOptions` are optional and combine. `Bounds` uses the file's R-tree index, so a query for one harbour reads only that harbour's rows: the Puget Sound box above returns 29,465 of the month's tracks in about a second. `From` and `To` keep tracks that overlap the window, and `Mmsi` keeps one vessel. The feature table and geometry column are found from the GeoPackage's own registry, so a file for any month works, and attribute columns are matched by name ignoring case and underscores.
+
+Reading the whole January 2026 file on the same desktop as above, from the page cache:
+
+| Mode | Elapsed | Tracks per second | Allocated per vertex | Peak working set |
+|---|---|---|---|---|
+| All tracks, `Read` or `Observe` | 6.5 s | 183,000 | 18 B | 57 MiB |
+| Puget Sound bounding box | 1.2 s | 25,000 | 17 B | 57 MiB |
+
+Stepping SQLite through the same rows without reading any column takes 3.9 s, so that is the floor. The rest is decoding 217 million vertices into `Position` values, which is where the 16 bytes per vertex go. The row loop steps a prepared statement through SQLitePCLRaw, the API underneath Microsoft.Data.Sqlite, because that returns the geometry blob and text columns as spans over SQLite's memory; going through the ADO.NET reader instead cost three times as long, mostly in blob streaming, date parsing and per-column type checks.
+
+`Solutions/Ais.Net.MarineCadastre.Benchmarks` has track benchmarks too, over a generated file with the shape of a real month; set `AIS_NET_MARINECADASTRE_GPKG` to a real file to measure that instead:
+
+```powershell
+dotnet run -c Release --project Solutions/Ais.Net.MarineCadastre.Benchmarks -- --filter *VesselTrack* --job short
 ```
 
 ## Licenses

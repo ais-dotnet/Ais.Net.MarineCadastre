@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="$(MSBuildThisFileDirectory)..\Endjin.Conventions.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageDescription>Reads the monthly AIS Vessel Tracks GeoPackage files published by MarineCadastre.gov (NOAA / BOEM) as an IObservable of vessel tracks, each a sequence of Ais.Net.Models positions with the vessel's static data. Sponsored by endjin.</PackageDescription>
+    <PackageTags>ais;marinecadastre;noaa;geopackage;gpkg;sqlite;tracks;marine;gis;rx;endjin</PackageTags>
+    <PackageReleaseNotes>
+      Initial release: observable and enumerable readers over the AIS Vessel Tracks GeoPackage, with bounding-box, time and MMSI filters.
+    </PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ais.Net.Models" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="SQLitePCLRaw.core" />
+    <PackageReference Include="System.Reactive" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ais.Net.MarineCadastre.Specs" />
+    <InternalsVisibleTo Include="Ais.Net.MarineCadastre.Benchmarks" />
+  </ItemGroup>
+
+</Project>

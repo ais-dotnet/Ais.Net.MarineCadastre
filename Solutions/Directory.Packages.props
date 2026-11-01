@@ -8,6 +8,12 @@
     <PackageVersion Include="Ais.Net.Models" Version="1.1.0" />
   </ItemGroup>
 
+  <ItemGroup Label="Ais.Net.MarineCadastre.Tracks">
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.14" />
+    <PackageVersion Include="SQLitePCLRaw.core" Version="2.1.13" />
+    <PackageVersion Include="System.Reactive" Version="7.0.0" />
+  </ItemGroup>
+
   <ItemGroup Label="Ais.Net.MarineCadastre.Specs">
     <PackageVersion Include="Shouldly" Version="4.3.0" />
   </ItemGroup>
