@@ -2,7 +2,7 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
-namespace Ais.Net.MarineCadastre;
+namespace Ais.Net.MarineCadastre.Csv;
 
 /// <summary>
 /// Which CSV column supplies the <see cref="Ais.Net.ShipType"/> of a static-data message.

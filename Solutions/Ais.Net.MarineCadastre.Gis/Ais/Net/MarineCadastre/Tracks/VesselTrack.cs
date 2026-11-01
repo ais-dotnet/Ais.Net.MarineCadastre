@@ -4,7 +4,7 @@
 
 using Ais.Net.Models.Abstractions;
 
-namespace Ais.Net.MarineCadastre;
+namespace Ais.Net.MarineCadastre.Tracks;
 
 /// <summary>
 /// One row of a MarineCadastre AIS Vessel Tracks GeoPackage: the path one vessel followed over part of

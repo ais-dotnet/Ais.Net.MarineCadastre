@@ -4,9 +4,11 @@
 
 using System.Reactive.Linq;
 
+using Ais.Net.MarineCadastre.GeoPackage;
+
 using Microsoft.Data.Sqlite;
 
-namespace Ais.Net.MarineCadastre;
+namespace Ais.Net.MarineCadastre.Tracks;
 
 /// <summary>
 /// Reads the monthly AIS Vessel Tracks GeoPackage files published by MarineCadastre.gov and yields one

@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 using Ais.Net.Models;
 
-namespace Ais.Net.MarineCadastre;
+namespace Ais.Net.MarineCadastre.Csv;
 
 /// <summary>
 /// Reads a MarineCadastre AIS vessel-traffic CSV file and yields Ais.Net.Models messages, one position

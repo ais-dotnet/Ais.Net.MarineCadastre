@@ -2,7 +2,7 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
-namespace Ais.Net.MarineCadastre;
+namespace Ais.Net.MarineCadastre.TransitCounts;
 
 /// <summary>
 /// Settings for reading cells or tiles from a <see cref="TransitCountRaster"/>.

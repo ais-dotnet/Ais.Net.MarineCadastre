@@ -6,7 +6,7 @@ using System.Reactive.Linq;
 
 using Ais.Net.MarineCadastre.GeoTiff;
 
-namespace Ais.Net.MarineCadastre;
+namespace Ais.Net.MarineCadastre.TransitCounts;
 
 /// <summary>
 /// Opens the yearly AIS Vessel Transit Counts rasters published by MarineCadastre.gov: GeoTIFFs whose

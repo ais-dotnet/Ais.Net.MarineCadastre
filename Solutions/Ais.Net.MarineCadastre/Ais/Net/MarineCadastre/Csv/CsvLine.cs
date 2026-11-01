@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
-namespace Ais.Net.MarineCadastre;
+namespace Ais.Net.MarineCadastre.Csv;
 
 /// <summary>
 /// Splits one CSV record into fields without allocating. Fields are returned as offsets into the line.

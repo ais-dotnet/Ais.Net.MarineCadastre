@@ -10,7 +10,7 @@ using System.Text;
 using Ais.Net.Models;
 using Ais.Net.Models.Abstractions;
 
-namespace Ais.Net.MarineCadastre;
+namespace Ais.Net.MarineCadastre.Csv;
 
 /// <summary>
 /// Turns MarineCadastre CSV records into Ais.Net.Models messages. The header line fixes the column

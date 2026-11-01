@@ -5,7 +5,7 @@
 using System.Globalization;
 using System.Xml.Linq;
 
-namespace Ais.Net.MarineCadastre;
+namespace Ais.Net.MarineCadastre.TransitCounts;
 
 /// <summary>
 /// Band statistics the producing tool stored in the raster, covering the cells that hold data. Present

@@ -1,6 +1,8 @@
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 
+using Ais.Net.MarineCadastre.GeoPackage;
+using Ais.Net.MarineCadastre.Tracks;
 using Ais.Net.MarineCadastre.TestSupport;
 using Ais.Net.Models.Abstractions;
 

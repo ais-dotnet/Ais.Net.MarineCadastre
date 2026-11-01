@@ -5,10 +5,12 @@ Readers for the archived AIS data published by [MarineCadastre.gov](https://hub.
 - **Ais.Net.MarineCadastre** reads the daily vessel-traffic CSV files and converts each row into [Ais.Net.Models](https://github.com/ais-dotnet/Ais.Net.Models) message types, so the same code that consumes a live [Ais.Net.Receiver](https://github.com/ais-dotnet/Ais.Net.Receiver) stream can run over years of archived US coastal traffic.
 - **Ais.Net.MarineCadastre.Gis** reads the GIS products published alongside: the monthly AIS Vessel Tracks GeoPackage as an `IObservable<VesselTrack>`, one vessel's path over part of a day with its static data, and the yearly AIS Vessel Transit Counts GeoTIFF as an `IObservable` of cells or tiles, with point lookups. Neither needs GDAL. See [Vessel tracks](#vessel-tracks) and [Transit counts](#transit-counts).
 
+Each product has its own namespace: `Ais.Net.MarineCadastre.Csv`, `Ais.Net.MarineCadastre.Tracks` and `Ais.Net.MarineCadastre.TransitCounts`, each holding that product's reader, its options and the types it produces. The root `Ais.Net.MarineCadastre` namespace holds only what they share, such as `BoundingBox`.
+
 ## Usage
 
 ```csharp
-using Ais.Net.MarineCadastre;
+using Ais.Net.MarineCadastre.Csv;
 using Ais.Net.Models;
 using Ais.Net.Models.Abstractions;
 
@@ -73,6 +75,7 @@ MarineCadastre also publishes a monthly **AIS Vessel Tracks** product: a [GeoPac
 ```csharp
 using System.Reactive.Linq;
 using Ais.Net.MarineCadastre;
+using Ais.Net.MarineCadastre.Tracks;
 
 VesselTrackReaderOptions pugetSound = new()
 {
@@ -115,6 +118,7 @@ MarineCadastre's yearly **AIS Vessel Transit Counts** product is a GeoTIFF raste
 
 ```csharp
 using Ais.Net.MarineCadastre;
+using Ais.Net.MarineCadastre.TransitCounts;
 using Ais.Net.Models.Abstractions;
 
 using TransitCountRaster raster = MarineCadastreTransitCountReader.Open("ais-transit-count-2025.tif");

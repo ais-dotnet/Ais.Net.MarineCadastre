@@ -7,11 +7,13 @@ using System.Text;
 
 using Ais.Net.Models.Abstractions;
 
+using Ais.Net.MarineCadastre.Tracks;
+
 using Microsoft.Data.Sqlite;
 
 using SQLitePCL;
 
-namespace Ais.Net.MarineCadastre;
+namespace Ais.Net.MarineCadastre.GeoPackage;
 
 /// <summary>
 /// The feature table of a tracks GeoPackage: which table and columns to read, the query that reads

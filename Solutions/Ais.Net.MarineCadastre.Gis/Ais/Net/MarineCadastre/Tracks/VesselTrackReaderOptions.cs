@@ -2,7 +2,7 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
-namespace Ais.Net.MarineCadastre;
+namespace Ais.Net.MarineCadastre.Tracks;
 
 /// <summary>
 /// Settings for <see cref="MarineCadastreTrackReader"/>. Every filter is optional; a track is returned

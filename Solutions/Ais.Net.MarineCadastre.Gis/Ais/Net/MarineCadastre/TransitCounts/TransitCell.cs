@@ -4,7 +4,7 @@
 
 using Ais.Net.Models.Abstractions;
 
-namespace Ais.Net.MarineCadastre;
+namespace Ais.Net.MarineCadastre.TransitCounts;
 
 /// <summary>
 /// One cell of a MarineCadastre transit-count raster that holds data.

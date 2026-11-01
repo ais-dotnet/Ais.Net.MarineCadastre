@@ -1,5 +1,6 @@
 using System.Reactive.Linq;
 
+using Ais.Net.MarineCadastre.TransitCounts;
 using Ais.Net.MarineCadastre.TestSupport;
 using Ais.Net.Models.Abstractions;
 

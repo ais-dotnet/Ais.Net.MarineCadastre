@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text;
 
+using Ais.Net.MarineCadastre.GeoPackage;
+
 using Shouldly;
 
 namespace Ais.Net.MarineCadastre.Specs;

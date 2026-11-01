@@ -7,7 +7,7 @@ using System.Buffers.Binary;
 
 using Ais.Net.Models.Abstractions;
 
-namespace Ais.Net.MarineCadastre;
+namespace Ais.Net.MarineCadastre.GeoPackage;
 
 /// <summary>
 /// Decodes (and, for tests, encodes) the GeoPackage binary geometry format: an 8-byte header, an
