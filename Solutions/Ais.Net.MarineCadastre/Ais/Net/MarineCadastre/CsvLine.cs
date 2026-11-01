@@ -2,6 +2,11 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
 namespace Ais.Net.MarineCadastre;
 
 /// <summary>
@@ -19,6 +24,75 @@ internal static class CsvLine
     /// </summary>
     /// <returns>The number of fields found, which can exceed <c>fields.Length</c>; the surplus are dropped.</returns>
     public static int Split(Span<byte> line, Span<CsvField> fields)
+    {
+        // Quoted fields are rare (a few hundred per million rows in MarineCadastre data), so decide
+        // once per line with a vectorised search and keep the common path free of quote handling.
+        if (line.IndexOf(Quote) < 0)
+        {
+            return Vector128.IsHardwareAccelerated && line.Length >= Vector128<byte>.Count
+                ? SplitUnquotedVectorised(line, fields)
+                : SplitUnquotedScalar(line, fields);
+        }
+
+        return SplitWithQuotes(line, fields);
+    }
+
+    private static int SplitUnquotedVectorised(ReadOnlySpan<byte> line, Span<CsvField> fields)
+    {
+        int count = 0;
+        int start = 0;
+        ref byte first = ref MemoryMarshal.GetReference(line);
+        Vector128<byte> commas = Vector128.Create(Comma);
+
+        // Find every comma 16 bytes at a time; each set bit in the mask is a field boundary.
+        int offset = 0;
+        int lastBlock = line.Length - Vector128<byte>.Count;
+        while (offset <= lastBlock)
+        {
+            uint mask = Vector128.Equals(Vector128.LoadUnsafe(ref first, (nuint)offset), commas).ExtractMostSignificantBits();
+            while (mask != 0)
+            {
+                int position = offset + BitOperations.TrailingZeroCount(mask);
+                mask &= mask - 1;
+                Record(fields, count++, start, position - start);
+                start = position + 1;
+            }
+
+            offset += Vector128<byte>.Count;
+        }
+
+        // The tail that did not fill a vector.
+        for (int i = offset; i < line.Length; i++)
+        {
+            if (Unsafe.Add(ref first, i) == Comma)
+            {
+                Record(fields, count++, start, i - start);
+                start = i + 1;
+            }
+        }
+
+        Record(fields, count++, start, line.Length - start);
+        return count;
+    }
+
+    private static int SplitUnquotedScalar(ReadOnlySpan<byte> line, Span<CsvField> fields)
+    {
+        int count = 0;
+        int start = 0;
+        for (int i = 0; i < line.Length; i++)
+        {
+            if (line[i] == Comma)
+            {
+                Record(fields, count++, start, i - start);
+                start = i + 1;
+            }
+        }
+
+        Record(fields, count++, start, line.Length - start);
+        return count;
+    }
+
+    private static int SplitWithQuotes(Span<byte> line, Span<CsvField> fields)
     {
         int count = 0;
         int position = 0;
@@ -98,6 +172,7 @@ internal static class CsvLine
         return count;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Record(Span<CsvField> fields, int index, int start, int length)
     {
         if (index < fields.Length)

@@ -3,6 +3,7 @@
 // </copyright>
 
 using System.Buffers.Text;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -37,9 +38,21 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreReaderOptions option
     private const uint HeadingNotAvailable = 511;
     private const int RateOfTurnNotAvailable = -128;
 
+    /// <summary>10^0 to 10^22, every one exactly representable as a double.</summary>
+    private static readonly double[] PowersOfTen =
+    [
+        1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11,
+        1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22,
+    ];
+
     private readonly Dictionary<uint, ulong> staticSignatures = [];
     private Columns columns;
     private bool headerParsed;
+
+    // A daily file has one date on every row, so the date part is validated and converted to ticks
+    // once and each row only adds its time of day.
+    private int cachedDateKey = -1;
+    private long cachedDateTicks;
 
     /// <summary>Gets the number of data rows parsed so far.</summary>
     public long RowCount { get; private set; }
@@ -142,7 +155,82 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreReaderOptions option
     private static ReadOnlySpan<byte> GetBytes(ReadOnlySpan<byte> line, ReadOnlySpan<CsvField> fields, int column) =>
         column < 0 || column >= fields.Length ? default : fields[column].In(line);
 
-    private static bool TryParseDouble(ReadOnlySpan<byte> bytes, out double value) =>
+    /// <summary>
+    /// Parses a decimal number. MarineCadastre writes plain fixed-point values ("-122.50573", "0.0",
+    /// "14"), which take a fast path: the digits are accumulated as an integer and divided once by a
+    /// power of ten. With at most 15 significant digits the integer is below 2^53 and the power of ten
+    /// up to 10^22 is exact, so that single division is correctly rounded (Clinger's fast path) and the
+    /// result is bit-identical to <see cref="Utf8Parser"/>, which handles everything else.
+    /// </summary>
+    internal static bool TryParseDouble(ReadOnlySpan<byte> bytes, out double value)
+    {
+        value = 0;
+        if (bytes.IsEmpty)
+        {
+            return false;
+        }
+
+        int i = 0;
+        bool negative = false;
+        if (bytes[0] == '-')
+        {
+            negative = true;
+            i = 1;
+        }
+
+        long mantissa = 0;
+        int significantDigits = 0;
+        int fractionDigits = 0;
+        bool inFraction = false;
+        bool anyDigit = false;
+
+        for (; i < bytes.Length; i++)
+        {
+            byte b = bytes[i];
+            uint digit = (uint)(b - '0');
+            if (digit <= 9)
+            {
+                anyDigit = true;
+                if (mantissa != 0 || digit != 0)
+                {
+                    if (++significantDigits > 15)
+                    {
+                        return TryParseDoubleSlow(bytes, out value);
+                    }
+                }
+
+                mantissa = (mantissa * 10) + digit;
+                if (inFraction)
+                {
+                    fractionDigits++;
+                }
+            }
+            else if (b == '.' && !inFraction)
+            {
+                inFraction = true;
+            }
+            else
+            {
+                return TryParseDoubleSlow(bytes, out value);
+            }
+        }
+
+        if (!anyDigit || fractionDigits > 22)
+        {
+            return TryParseDoubleSlow(bytes, out value);
+        }
+
+        double result = mantissa;
+        if (fractionDigits > 0)
+        {
+            result /= PowersOfTen[fractionDigits];
+        }
+
+        value = negative ? -result : result;
+        return true;
+    }
+
+    private static bool TryParseDoubleSlow(ReadOnlySpan<byte> bytes, out double value) =>
         Utf8Parser.TryParse(bytes, out value, out int consumed) && consumed == bytes.Length;
 
     private static bool TryParseInt(ReadOnlySpan<byte> bytes, out int value) =>
@@ -182,7 +270,7 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreReaderOptions option
     /// Parses <c>yyyy-MM-dd HH:mm:ss</c> (or with a <c>T</c> separator, optionally followed by a
     /// fraction or <c>Z</c>) as UTC, which is what MarineCadastre writes.
     /// </summary>
-    private static bool TryParseTimestamp(ReadOnlySpan<byte> bytes, out DateTimeOffset value)
+    private bool TryParseTimestamp(ReadOnlySpan<byte> bytes, out DateTimeOffset value)
     {
         value = default;
         if (bytes.Length < 19
@@ -201,12 +289,25 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreReaderOptions option
             return false;
         }
 
-        if (year < 1 || month is < 1 or > 12 || day < 1 || day > DateTime.DaysInMonth(year, month) || hour > 23 || minute > 59 || second > 59)
+        if (hour > 23 || minute > 59 || second > 59)
         {
             return false;
         }
 
-        value = new DateTimeOffset(year, month, day, hour, minute, second, TimeSpan.Zero);
+        int dateKey = (year * 10000) + (month * 100) + day;
+        if (dateKey != this.cachedDateKey)
+        {
+            if (year < 1 || month is < 1 or > 12 || day < 1 || day > DateTime.DaysInMonth(year, month))
+            {
+                return false;
+            }
+
+            this.cachedDateTicks = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc).Ticks;
+            this.cachedDateKey = dateKey;
+        }
+
+        long ticks = this.cachedDateTicks + ((((hour * 60) + minute) * 60) + second) * TimeSpan.TicksPerSecond;
+        value = new DateTimeOffset(ticks, TimeSpan.Zero);
         return true;
 
         static bool TryDigits(ReadOnlySpan<byte> digits, out int result)
@@ -236,7 +337,7 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreReaderOptions option
         }
 
         if (!Utf8Parser.TryParse(fields[this.columns.Mmsi].In(line), out uint mmsi, out _)
-            || !TryParseTimestamp(fields[this.columns.BaseDateTime].In(line), out DateTimeOffset timestamp))
+            || !this.TryParseTimestamp(fields[this.columns.BaseDateTime].In(line), out DateTimeOffset timestamp))
         {
             return false;
         }
@@ -273,26 +374,41 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreReaderOptions option
     /// </summary>
     private bool IsNewStaticData(ReadOnlySpan<byte> line, ReadOnlySpan<CsvField> fields, int fieldCount, uint mmsi)
     {
-        // FNV-1a over the raw bytes of each static column, with a separator so that moving bytes
-        // between adjacent columns changes the hash.
-        const ulong OffsetBasis = 14695981039346656037;
-        const ulong Prime = 1099511628211;
+        // A 64-bit multiply-mix over the raw bytes of each static column, eight bytes at a time, with
+        // each column's length folded in so that moving bytes between adjacent columns changes the
+        // hash. It only has to be stable within one read, not across runs or machines.
+        const ulong Seed = 14695981039346656037;
+        const ulong Prime = 0x9E3779B97F4A7C15;
 
-        ulong hash = OffsetBasis;
+        ulong hash = Seed;
         bool anyContent = false;
         foreach (int column in this.columns.StaticColumns)
         {
+            int length = 0;
             if (column >= 0 && column < fieldCount)
             {
                 ReadOnlySpan<byte> bytes = fields[column].In(line);
-                anyContent |= !bytes.IsEmpty;
-                foreach (byte b in bytes)
+                length = bytes.Length;
+                while (bytes.Length >= sizeof(ulong))
                 {
-                    hash = (hash ^ b) * Prime;
+                    hash = BitOperations.RotateLeft((hash ^ MemoryMarshal.Read<ulong>(bytes)) * Prime, 29);
+                    bytes = bytes[sizeof(ulong)..];
+                }
+
+                if (!bytes.IsEmpty)
+                {
+                    ulong tail = 0;
+                    for (int i = 0; i < bytes.Length; i++)
+                    {
+                        tail |= (ulong)bytes[i] << (8 * i);
+                    }
+
+                    hash = BitOperations.RotateLeft((hash ^ tail) * Prime, 29);
                 }
             }
 
-            hash = (hash ^ 0x1F) * Prime;
+            anyContent |= length > 0;
+            hash = (hash ^ (ulong)(length + 1)) * Prime;
         }
 
         if (!anyContent)

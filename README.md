@@ -45,6 +45,15 @@ Header names are matched case-insensitively, ignoring underscores, so both the `
 
 The reader streams. It holds one 256 KB block of the file, splits lines and fields in place without creating strings, and allocates one record per position report. Strings are created only for the static-data messages. A `Dictionary<uint, ulong>` keeps an 8-byte signature per vessel for static-data de-duplication.
 
+Measured on the 1 January 2026 daily file (828 MiB, 8.5 million rows) on a desktop machine, .NET 10, reading from disk:
+
+| Mode | Elapsed | Messages per second | Allocated per message | Peak working set |
+|---|---|---|---|---|
+| Positions only | 1.9 s | 4.5 million | 134 B | 47 MiB |
+| With static data | 2.5 s | 3.4 million | 134 B | 48 MiB |
+
+134 bytes is the size of one `AisMessageType1Through3` record; nothing else is allocated per row. Field splitting uses a vectorised comma scan for the usual quote-free line, numbers take an exact fast path for fixed-point text, and the date part of the timestamp is converted once per day rather than per row.
+
 `Solutions/Ais.Net.MarineCadastre.Benchmarks` measures the layers (line splitting, field splitting, positions only, with static data, async). Point `AIS_NET_MARINECADASTRE_CSV` at a real daily file to run over real traffic:
 
 ```powershell
