@@ -187,6 +187,7 @@ internal sealed class TrackTable
     {
         sqlite3 database = connection.Handle ?? throw new InvalidOperationException("The connection is not open.");
         using sqlite3_stmt statement = this.Prepare(database, options);
+        RecentStrings strings = new();
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -201,7 +202,7 @@ internal sealed class TrackTable
                 SqliteException.ThrowExceptionForRC(result, database);
             }
 
-            VesselTrack? track = this.ReadTrack(statement, options);
+            VesselTrack? track = this.ReadTrack(statement, options, strings);
             if (track is not null)
             {
                 yield return track;
@@ -298,12 +299,20 @@ internal sealed class TrackTable
 
         sql.Append("select t.").Append(QuoteIdentifier(this.idColumn));
         sql.Append(", t.").Append(QuoteIdentifier(this.geometryColumn));
-        foreach (string? column in this.attributeColumns)
+        for (int i = 0; i < this.attributeColumns.Length; i++)
         {
+            string? column = this.attributeColumns[i];
+            bool numeric = IsNumericOrdinal(i + MmsiOrdinal);
             sql.Append(", ");
             if (column is null)
             {
-                sql.Append("null");
+                sql.Append(numeric ? "-1" : "null");
+            }
+            else if (numeric)
+            {
+                // Numeric columns come back as -1 when null, so reading one costs a single native call
+                // instead of a type probe followed by a fetch. Every real value is non-negative.
+                sql.Append("ifnull(t.").Append(QuoteIdentifier(column)).Append(", -1)");
             }
             else
             {
@@ -373,7 +382,7 @@ internal sealed class TrackTable
         return statement;
     }
 
-    private VesselTrack? ReadTrack(sqlite3_stmt statement, VesselTrackReaderOptions options)
+    private VesselTrack? ReadTrack(sqlite3_stmt statement, VesselTrackReaderOptions options, RecentStrings strings)
     {
         if (IsNull(statement, GeometryOrdinal))
         {
@@ -399,12 +408,12 @@ internal sealed class TrackTable
             return null;
         }
 
-        if (IsNull(statement, MmsiOrdinal))
+        long mmsiValue = raw.sqlite3_column_int64(statement, MmsiOrdinal);
+        if (mmsiValue == -1)
         {
             throw new InvalidDataException($"Row {id} has no MMSI.");
         }
 
-        long mmsiValue = raw.sqlite3_column_int64(statement, MmsiOrdinal);
         if (mmsiValue is < 0 or > uint.MaxValue)
         {
             throw new InvalidDataException($"Row {id} has MMSI {mmsiValue}, which is out of range.");
@@ -415,24 +424,28 @@ internal sealed class TrackTable
         uint? chosenType = vesselType ?? cargo;
         uint? navigationStatus = ReadUInt32(statement, NavigationStatusOrdinal);
         ReadOnlySpan<byte> transceiver = ReadText(statement, TransceiverOrdinal).Trim((byte)' ');
+        double draught = raw.sqlite3_column_double(statement, DraughtOrdinal);
 
         return new VesselTrack(id, (uint)mmsiValue, start, end, points)
         {
             Duration = ReadUInt32(statement, DurationOrdinal) is { } minutes ? TimeSpan.FromMinutes(minutes) : end - start,
             Envelope = envelope,
-            VesselName = ReadString(statement, VesselNameOrdinal),
-            CallSign = ReadString(statement, CallSignOrdinal),
+            VesselName = strings.Get(0, ReadText(statement, VesselNameOrdinal)),
+            CallSign = strings.Get(1, ReadText(statement, CallSignOrdinal)),
             ImoNumber = ParseImoNumber(ReadText(statement, ImoOrdinal)),
             ShipType = chosenType is <= 99 ? (ShipType)chosenType : ShipType.NotAvailable,
-            ShipTypeName = ReadString(statement, VesselTypeNameOrdinal),
+            ShipTypeName = strings.Get(2, ReadText(statement, VesselTypeNameOrdinal)),
             NavigationStatus = navigationStatus is <= 15 ? (NavigationStatus)navigationStatus : NavigationStatus.NotDefined,
             Length = ReadUInt32(statement, LengthOrdinal),
             Width = ReadUInt32(statement, WidthOrdinal),
-            Draught = IsNull(statement, DraughtOrdinal) ? null : raw.sqlite3_column_double(statement, DraughtOrdinal),
+            Draught = draught < 0 ? null : draught,
             Cargo = cargo,
             IsClassB = transceiver.Length == 1 && (transceiver[0] | 0x20) == 'b',
         };
     }
+
+    private static bool IsNumericOrdinal(int ordinal) =>
+        ordinal is MmsiOrdinal or VesselTypeOrdinal or NavigationStatusOrdinal or LengthOrdinal or WidthOrdinal or DraughtOrdinal or CargoOrdinal or DurationOrdinal;
 
     private static bool IsNull(sqlite3_stmt statement, int ordinal) =>
         raw.sqlite3_column_type(statement, ordinal) == raw.SQLITE_NULL;
@@ -472,23 +485,43 @@ internal sealed class TrackTable
         }
     }
 
-    // sqlite3_column_blob on a TEXT value returns its UTF-8 bytes without conversion or copying.
+    // sqlite3_column_blob on a TEXT value returns its UTF-8 bytes without conversion or copying, and an
+    // empty span for null, which is all a missing text means here.
     private static ReadOnlySpan<byte> ReadText(sqlite3_stmt statement, int ordinal) =>
-        IsNull(statement, ordinal) ? default : raw.sqlite3_column_blob(statement, ordinal);
+        raw.sqlite3_column_blob(statement, ordinal);
 
-    private static string ReadString(sqlite3_stmt statement, int ordinal)
+    /// <summary>
+    /// Turns text columns into strings, handing back the previous row's string when the bytes are the
+    /// same. The files are ordered by vessel, so a vessel's name, call sign and type name repeat over
+    /// its consecutive tracks and most rows allocate no strings at all.
+    /// </summary>
+    private sealed class RecentStrings
     {
-        ReadOnlySpan<byte> text = ReadText(statement, ordinal);
-        return text.IsEmpty ? string.Empty : Encoding.UTF8.GetString(text);
+        private readonly byte[][] recentBytes = [[], [], []];
+        private readonly string[] recentStrings = [string.Empty, string.Empty, string.Empty];
+
+        public string Get(int slot, ReadOnlySpan<byte> text)
+        {
+            if (text.IsEmpty)
+            {
+                return string.Empty;
+            }
+
+            if (text.SequenceEqual(this.recentBytes[slot]))
+            {
+                return this.recentStrings[slot];
+            }
+
+            string value = Encoding.UTF8.GetString(text);
+            this.recentBytes[slot] = text.ToArray();
+            this.recentStrings[slot] = value;
+            return value;
+        }
     }
 
+    // Numeric columns are selected through ifnull(..., -1), so -1 is null and no type probe is needed.
     private static uint? ReadUInt32(sqlite3_stmt statement, int ordinal)
     {
-        if (IsNull(statement, ordinal))
-        {
-            return null;
-        }
-
         long value = raw.sqlite3_column_int64(statement, ordinal);
         return value is >= 0 and <= uint.MaxValue ? (uint)value : null;
     }

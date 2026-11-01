@@ -1,10 +1,15 @@
 using System.Reactive.Linq;
 
+using Ais.Net.MarineCadastre.GeoPackage;
 using Ais.Net.MarineCadastre.Tracks;
 using Ais.Net.MarineCadastre.TestSupport;
 using Ais.Net.Models.Abstractions;
 
 using BenchmarkDotNet.Attributes;
+
+using Microsoft.Data.Sqlite;
+
+using SQLitePCL;
 
 namespace Ais.Net.MarineCadastre.Benchmarks;
 
@@ -47,6 +52,40 @@ public class VesselTrackBenchmarks
     [GlobalCleanup]
     public void Cleanup() => this.generated?.Dispose();
 
+    /// <summary>
+    /// The floor: SQLite stepping every row and handing back the geometry blob, with nothing decoded.
+    /// </summary>
+    [Benchmark]
+    public long StepRowsOnly()
+    {
+        using SqliteConnection connection = TrackTable.Open(this.path);
+        using sqlite3_stmt statement = Prepare(connection);
+        long bytes = 0;
+        while (raw.sqlite3_step(statement) == raw.SQLITE_ROW)
+        {
+            bytes += raw.sqlite3_column_blob(statement, 1).Length;
+        }
+
+        return bytes;
+    }
+
+    /// <summary>
+    /// Stepping plus geometry decoding into positions, without attributes or the record.
+    /// </summary>
+    [Benchmark]
+    public long StepAndDecodeGeometry()
+    {
+        using SqliteConnection connection = TrackTable.Open(this.path);
+        using sqlite3_stmt statement = Prepare(connection);
+        long points = 0;
+        while (raw.sqlite3_step(statement) == raw.SQLITE_ROW)
+        {
+            points += GeoPackageGeometry.DecodeLine(raw.sqlite3_column_blob(statement, 1), out _).Length;
+        }
+
+        return points;
+    }
+
     [Benchmark(Baseline = true)]
     public long ReadAllTracks()
     {
@@ -73,6 +112,13 @@ public class VesselTrackBenchmarks
         }
 
         return points;
+    }
+
+    private static sqlite3_stmt Prepare(SqliteConnection connection)
+    {
+        string table = (string)new SqliteCommand("select table_name from gpkg_contents where data_type = 'features' limit 1", connection).ExecuteScalar()!;
+        raw.sqlite3_prepare_v2(connection.Handle!, $"select OBJECTID, Shape from \"{table}\" order by OBJECTID", out sqlite3_stmt statement);
+        return statement;
     }
 
     private static IEnumerable<TrackRow> GenerateTracks(int count)

@@ -57,17 +57,24 @@ internal sealed record RasterGeoreference(RasterProjection Projection, double Or
     /// <param name="x">Model X.</param>
     /// <param name="y">Model Y.</param>
     /// <returns>The position.</returns>
-    public Position ToPosition(double x, double y)
-    {
-        if (this.Projection == RasterProjection.Geographic)
-        {
-            return new Position(y, x);
-        }
+    public Position ToPosition(double x, double y) => new(this.LatitudeOf(y), this.LongitudeOf(x));
 
-        double longitude = x / EarthRadius * 180 / Math.PI;
-        double latitude = Math.Atan(Math.Sinh(y / EarthRadius)) * 180 / Math.PI;
-        return new Position(latitude, longitude);
-    }
+    /// <summary>
+    /// Converts a model Y to latitude. In Web Mercator this is the expensive half of the conversion,
+    /// and every cell in a raster row shares it.
+    /// </summary>
+    /// <param name="y">Model Y.</param>
+    /// <returns>Latitude in degrees.</returns>
+    public double LatitudeOf(double y) =>
+        this.Projection == RasterProjection.Geographic ? y : Math.Atan(Math.Sinh(y / EarthRadius)) * 180 / Math.PI;
+
+    /// <summary>
+    /// Converts a model X to longitude, which in Web Mercator is a plain scaling.
+    /// </summary>
+    /// <param name="x">Model X.</param>
+    /// <returns>Longitude in degrees.</returns>
+    public double LongitudeOf(double x) =>
+        this.Projection == RasterProjection.Geographic ? x : x / EarthRadius * 180 / Math.PI;
 
     /// <summary>
     /// Gets the geographic box covering a rectangle of cells at a given cell size.

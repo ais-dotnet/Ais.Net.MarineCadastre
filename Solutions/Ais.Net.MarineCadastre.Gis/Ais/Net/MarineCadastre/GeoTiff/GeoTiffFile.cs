@@ -163,15 +163,17 @@ internal sealed class GeoTiffFile : IDisposable
     }
 
     /// <summary>
-    /// Decodes compressed block bytes into cell values.
+    /// Decodes compressed block bytes into cell values. A span shorter than the block decodes only its
+    /// leading cells, which is all a point lookup needs, and LZW and Deflate stop there.
     /// </summary>
     /// <param name="level">The level.</param>
     /// <param name="compressed">The block's bytes as stored.</param>
-    /// <param name="cells">Receives <c>BlockWidth × BlockHeight</c> values.</param>
+    /// <param name="cells">Receives up to <c>BlockWidth × BlockHeight</c> values, from the block's first cell.</param>
     public void DecodeBlock(RasterLevel level, ReadOnlySpan<byte> compressed, Span<uint> cells)
     {
         int bytesPerSample = level.BitsPerSample / 8;
-        int rawLength = level.BlockWidth * level.BlockHeight * bytesPerSample;
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(cells.Length, level.BlockWidth * level.BlockHeight, nameof(cells));
+        int rawLength = cells.Length * bytesPerSample;
         byte[] raw = ArrayPool<byte>.Shared.Rent(rawLength);
         try
         {
@@ -224,9 +226,9 @@ internal sealed class GeoTiffFile : IDisposable
             if (level.Predictor == 2)
             {
                 uint mask = level.BitsPerSample == 32 ? uint.MaxValue : (1u << level.BitsPerSample) - 1;
-                for (int row = 0; row < level.BlockHeight; row++)
+                for (int rowStart = 0; rowStart < cells.Length; rowStart += level.BlockWidth)
                 {
-                    Span<uint> line = cells.Slice(row * level.BlockWidth, level.BlockWidth);
+                    Span<uint> line = cells.Slice(rowStart, Math.Min(level.BlockWidth, cells.Length - rowStart));
                     for (int column = 1; column < line.Length; column++)
                     {
                         line[column] = (line[column] + line[column - 1]) & mask;

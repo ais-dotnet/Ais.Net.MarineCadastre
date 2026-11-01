@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 
 using Ais.Net.Models.Abstractions;
 
@@ -67,7 +68,9 @@ internal static class GeoPackageGeometry
         int count = 0;
         Walk(wkb, ref offset, Span<Position>.Empty, ref count, countOnly: true);
 
-        Position[] points = new Position[count];
+        // Every element is assigned by the fill pass, so skip the zeroing: on a month of tracks that is
+        // 3.5 GB of memory the runtime would otherwise clear first.
+        Position[] points = GC.AllocateUninitializedArray<Position>(count);
         offset = 0;
         int written = 0;
         Walk(wkb, ref offset, points, ref written, countOnly: false);
@@ -194,6 +197,23 @@ internal static class GeoPackageGeometry
                 {
                     offset += count * stride;
                     written += count;
+                    break;
+                }
+
+                if (littleEndian == BitConverter.IsLittleEndian)
+                {
+                    // The file's byte order is the machine's, which is always so in practice: read the
+                    // ordinates as doubles directly, with one bounds check per span rather than per value.
+                    ReadOnlySpan<double> ordinates = MemoryMarshal.Cast<byte, double>(wkb.Slice(offset, count * stride));
+                    int doublesPerPoint = stride / sizeof(double);
+                    Span<Position> destination = target.Slice(written, count);
+                    for (int i = 0, ordinate = 0; i < count; i++, ordinate += doublesPerPoint)
+                    {
+                        destination[i] = new Position(ordinates[ordinate + 1], ordinates[ordinate]);
+                    }
+
+                    written += count;
+                    offset += count * stride;
                     break;
                 }
 

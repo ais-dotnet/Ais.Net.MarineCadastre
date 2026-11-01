@@ -11,6 +11,12 @@ namespace Ais.Net.MarineCadastre.GeoTiff;
 /// bits wide, where the code width grows one code earlier than in the original LZW, as libtiff writes
 /// and reads it.
 /// </summary>
+/// <remarks>
+/// Every string the code table defines is a substring of the output already produced since the last
+/// clear code, so the table holds (start, length) pairs into the output and a code decodes as one block
+/// copy. On a sparse raster most codes stand for long runs of zero bytes, and copying them is several
+/// times faster than rebuilding them a byte at a time through prefix links.
+/// </remarks>
 internal static class LzwDecoder
 {
     private const int ClearCode = 256;
@@ -28,25 +34,17 @@ internal static class LzwDecoder
     /// <exception cref="InvalidDataException">Thrown when a code refers to an entry the table does not have.</exception>
     public static int Decode(ReadOnlySpan<byte> input, Span<byte> output)
     {
-        ushort[] prefix = ArrayPool<ushort>.Shared.Rent(TableSize);
-        ushort[] length = ArrayPool<ushort>.Shared.Rent(TableSize);
-        byte[] suffix = ArrayPool<byte>.Shared.Rent(TableSize);
+        int[] start = ArrayPool<int>.Shared.Rent(TableSize);
+        int[] length = ArrayPool<int>.Shared.Rent(TableSize);
         try
         {
-            for (int i = 0; i < 256; i++)
-            {
-                suffix[i] = (byte)i;
-                length[i] = 1;
-            }
-
-            Span<byte> scratch = stackalloc byte[TableSize];
-
             ulong bitBuffer = 0;
             int bitCount = 0;
             int inputIndex = 0;
             int codeBits = 9;
             int nextCode = FirstFreeCode;
-            int previous = -1;
+            int previousStart = -1;
+            int previousLength = 0;
             int written = 0;
 
             while (written < output.Length)
@@ -69,7 +67,7 @@ internal static class LzwDecoder
                 {
                     codeBits = 9;
                     nextCode = FirstFreeCode;
-                    previous = -1;
+                    previousStart = -1;
                     continue;
                 }
 
@@ -78,89 +76,80 @@ internal static class LzwDecoder
                     break;
                 }
 
-                if (previous < 0)
+                int stringStart = written;
+                int stringLength;
+                int remaining = output.Length - written;
+
+                if (code < ClearCode)
                 {
-                    if (code > 255)
+                    output[written++] = (byte)code;
+                    stringLength = 1;
+                }
+                else if (code < nextCode && previousStart >= 0)
+                {
+                    stringLength = length[code];
+                    int fit = Math.Min(stringLength, remaining);
+                    output.Slice(start[code], fit).CopyTo(output.Slice(written, fit));
+                    written += fit;
+                    if (fit < stringLength)
                     {
-                        throw new InvalidDataException("LZW data starts with a code that is not a literal byte.");
+                        break;
+                    }
+                }
+                else if (code == nextCode && previousStart >= 0)
+                {
+                    // The KwKwK case: the previous string followed by its own first byte. The previous
+                    // string ends exactly where this one begins, so the copy does not overlap.
+                    stringLength = previousLength + 1;
+                    int fit = Math.Min(previousLength, remaining);
+                    output.Slice(previousStart, fit).CopyTo(output.Slice(written, fit));
+                    written += fit;
+                    if (fit < previousLength)
+                    {
+                        break;
                     }
 
-                    output[written++] = (byte)code;
-                    previous = code;
-                    continue;
-                }
+                    if (remaining == previousLength)
+                    {
+                        break;
+                    }
 
-                byte firstByte;
-                int stringCode;
-                bool addFirstOfPrevious;
-                if (code < nextCode)
-                {
-                    stringCode = code;
-                    addFirstOfPrevious = false;
-                }
-                else if (code == nextCode)
-                {
-                    // The KwKwK case: the string is the previous string followed by its own first byte.
-                    stringCode = previous;
-                    addFirstOfPrevious = true;
+                    output[written++] = output[previousStart];
                 }
                 else
                 {
-                    throw new InvalidDataException("LZW data refers to a table entry that has not been defined.");
+                    throw new InvalidDataException(previousStart < 0
+                        ? "LZW data starts with a code that is not a literal byte."
+                        : "LZW data refers to a table entry that has not been defined.");
                 }
 
-                int stringLength = length[stringCode] + (addFirstOfPrevious ? 1 : 0);
-                bool overflows = written + stringLength > output.Length;
-                Span<byte> target = overflows ? scratch[..stringLength] : output.Slice(written, stringLength);
-
-                int position = length[stringCode] - 1;
-                int current = stringCode;
-                while (current >= FirstFreeCode)
+                if (previousStart >= 0)
                 {
-                    target[position--] = suffix[current];
-                    current = prefix[current];
+                    if (nextCode < TableSize)
+                    {
+                        // The new entry is the previous string plus the first byte of this one, which
+                        // sit next to each other in the output.
+                        start[nextCode] = previousStart;
+                        length[nextCode] = previousLength + 1;
+                        nextCode++;
+                    }
+
+                    if (nextCode + 1 >= (1 << codeBits) && codeBits < MaxCodeBits)
+                    {
+                        codeBits++;
+                    }
                 }
 
-                firstByte = suffix[current];
-                target[position] = firstByte;
-                if (addFirstOfPrevious)
-                {
-                    target[stringLength - 1] = firstByte;
-                }
-
-                if (overflows)
-                {
-                    int fit = output.Length - written;
-                    target[..fit].CopyTo(output[written..]);
-                    written += fit;
-                    break;
-                }
-
-                written += stringLength;
-
-                if (nextCode < TableSize)
-                {
-                    prefix[nextCode] = (ushort)previous;
-                    suffix[nextCode] = firstByte;
-                    length[nextCode] = (ushort)(length[previous] + 1);
-                    nextCode++;
-                }
-
-                if (nextCode + 1 >= (1 << codeBits) && codeBits < MaxCodeBits)
-                {
-                    codeBits++;
-                }
-
-                previous = code;
+                previousStart = stringStart;
+                previousLength = stringLength;
             }
 
             return written;
         }
         finally
         {
-            ArrayPool<ushort>.Shared.Return(prefix);
-            ArrayPool<ushort>.Shared.Return(length);
-            ArrayPool<byte>.Shared.Return(suffix);
+            ArrayPool<int>.Shared.Return(start);
+            ArrayPool<int>.Shared.Return(length);
         }
     }
 }

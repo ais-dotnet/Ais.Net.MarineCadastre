@@ -99,10 +99,10 @@ Reading the whole January 2026 file on the same desktop as above, from the page 
 
 | Mode | Elapsed | Tracks per second | Allocated per vertex | Peak working set |
 |---|---|---|---|---|
-| All tracks, `Read` or `Observe` | 6.5 s | 183,000 | 18 B | 57 MiB |
+| All tracks, `Read` or `Observe` | 5.5 s | 215,000 | 18 B | 56 MiB |
 | Puget Sound bounding box | 1.2 s | 25,000 | 17 B | 57 MiB |
 
-Stepping SQLite through the same rows without reading any column takes 3.9 s, so that is the floor. The rest is decoding 217 million vertices into `Position` values, which is where the 16 bytes per vertex go. The row loop steps a prepared statement through SQLitePCLRaw, the API underneath Microsoft.Data.Sqlite, because that returns the geometry blob and text columns as spans over SQLite's memory; going through the ADO.NET reader instead cost three times as long, mostly in blob streaming, date parsing and per-column type checks.
+Stepping SQLite through the same rows and touching the geometry blob, with nothing decoded, takes about 2 s, so that is the floor; the `StepRowsOnly` and `StepAndDecodeGeometry` benchmarks measure the layers. The rest is decoding 217 million vertices into `Position` values, which is where the 16 bytes per vertex go. The row loop steps a prepared statement through SQLitePCLRaw, the API underneath Microsoft.Data.Sqlite, because that returns the geometry blob and text columns as spans over SQLite's memory; going through the ADO.NET reader instead cost three times as long, mostly in blob streaming, date parsing and per-column type checks. Numeric columns are selected through `ifnull` so a null costs no extra native call, position arrays are allocated without zeroing since every element is written, and a vessel's name, call sign and type name are reused across its consecutive tracks rather than allocated again.
 
 `Solutions/Ais.Net.MarineCadastre.Benchmarks` has track benchmarks too, over a generated file with the shape of a real month; set `AIS_NET_MARINECADASTRE_GPKG` to a real file to measure that instead:
 
@@ -147,12 +147,12 @@ Measured on the 2025 file on the same desktop:
 
 | Operation | Result | Elapsed |
 |---|---|---|
-| `CountAt`, four lookups in different tiles | one 70 KB tile each | 18 ms in total |
-| Puget Sound box, `Read` | 116,153 cells | 0.04 s |
-| Whole file, `Read` or `Observe` | 371,149,894 cells; count, maximum and mean match the stored statistics exactly | 23 s |
-| Whole file, `ReadTiles` | 7,643 non-empty tiles, 2 billion cells | 13 s |
+| `CountAt`, four lookups in different tiles | one 70 KB tile each, decoded only as far as the cell | under 10 ms each |
+| Puget Sound box, `Read` | 116,153 cells | 0.06 s |
+| Whole file, `Read` or `Observe` | 371,149,894 cells; count, maximum and mean match the stored statistics exactly | 14 s |
+| Whole file, `ReadTiles` | 7,643 non-empty tiles, 2 billion cells | 10 s |
 
-The whole-file read allocates about 1 MiB in total and peaks at 45 MiB of working set, since `TransitCell` is a struct and tiles decode into one reused buffer. The ten seconds between the tile and cell figures is the per-cell scan of two billion decoded values and the Web Mercator conversion of the 371 million centres.
+The whole-file read allocates about 1 MiB in total and peaks at 45 MiB of working set, since `TransitCell` is a struct and tiles decode into one reused buffer. Decoding the LZW tiles is most of the time: the decoder keeps its code table as offsets into the output already produced, so each code is one block copy, which suits a raster where most codes stand for long runs of NoData. The cell scan skips NoData runs with a vectorised search and converts each row's latitude once, so it adds a few seconds over the tile read rather than ten. A point lookup decodes a tile only up to the cell it needs, since LZW is sequential.
 
 ## Licenses
 

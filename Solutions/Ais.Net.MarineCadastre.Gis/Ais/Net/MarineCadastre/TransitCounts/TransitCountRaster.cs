@@ -34,6 +34,7 @@ public sealed class TransitCountRaster : IDisposable
     private uint[]? cachedCells;
     private int cachedLevel = -1;
     private int cachedBlock = -1;
+    private int cachedCellCount;
 
     internal TransitCountRaster(GeoTiffFile file, string path)
     {
@@ -121,18 +122,21 @@ public sealed class TransitCountRaster : IDisposable
 
         lock (this.cacheLock)
         {
-            uint[]? cells = this.cachedCells;
-            if (cells is null || this.cachedLevel != level || this.cachedBlock != blockIndex)
+            int blockCells = raster.BlockWidth * raster.BlockHeight;
+            uint[] cells = this.cachedCells is { } existing && existing.Length == blockCells ? existing : new uint[blockCells];
+            bool sameBlock = ReferenceEquals(cells, this.cachedCells) && this.cachedLevel == level && this.cachedBlock == blockIndex;
+            if (!sameBlock || offset >= this.cachedCellCount)
             {
-                if (cells is null || cells.Length != raster.BlockWidth * raster.BlockHeight)
-                {
-                    cells = new uint[raster.BlockWidth * raster.BlockHeight];
-                    this.cachedCells = cells;
-                }
+                this.cachedCells = cells;
 
-                this.file.DecodeBlock(raster, blockIndex, cells);
+                // Decode only as far as the cell asked for: the compression is sequential, so a cell
+                // near the top of a tile costs a fraction of the tile. A later lookup further down the
+                // same tile decodes the whole of it.
+                int needed = sameBlock ? cells.Length : offset + 1;
+                this.file.DecodeBlock(raster, blockIndex, cells.AsSpan(0, needed));
                 this.cachedLevel = level;
                 this.cachedBlock = blockIndex;
+                this.cachedCellCount = needed;
             }
 
             uint value = cells[offset];
@@ -235,26 +239,43 @@ public sealed class TransitCountRaster : IDisposable
             for (int row = 0; row < height; row++)
             {
                 int rowStart = row * level.BlockWidth;
-                double y = geo.OriginY - ((firstRow + row + 0.5) * cellHeight);
-                for (int column = 0; column < width; column++)
+
+                // Most cells are NoData, so jump between the others with a vectorised search, and
+                // convert the row's latitude once: every cell in the row shares it.
+                int column = NextCellWithData(reader.Cells, rowStart, 0, width, noData);
+                if (column < 0)
+                {
+                    continue;
+                }
+
+                double latitude = geo.LatitudeOf(geo.OriginY - ((firstRow + row + 0.5) * cellHeight));
+                while (column >= 0)
                 {
                     uint value = reader.Cells[rowStart + column];
-                    if (value == noData || value < minimum)
+                    if (value >= minimum)
                     {
-                        continue;
+                        Position centre = new(latitude, geo.LongitudeOf(geo.OriginX + ((firstColumn + column + 0.5) * cellWidth)));
+                        if (options.Bounds is not { } bounds || bounds.Contains(centre))
+                        {
+                            yield return new TransitCell(firstColumn + column, firstRow + row, centre, value);
+                        }
                     }
 
-                    double x = geo.OriginX + ((firstColumn + column + 0.5) * cellWidth);
-                    Position centre = geo.ToPosition(x, y);
-                    if (options.Bounds is { } bounds && !bounds.Contains(centre))
-                    {
-                        continue;
-                    }
-
-                    yield return new TransitCell(firstColumn + column, firstRow + row, centre, value);
+                    column = NextCellWithData(reader.Cells, rowStart, column + 1, width, noData);
                 }
             }
         }
+    }
+
+    private static int NextCellWithData(uint[] cells, int rowStart, int from, int width, uint noData)
+    {
+        if (from >= width)
+        {
+            return -1;
+        }
+
+        int offset = cells.AsSpan(rowStart + from, width - from).IndexOfAnyExcept(noData);
+        return offset < 0 ? -1 : from + offset;
     }
 
     private IEnumerable<TransitTile> ReadTilesCore(TransitCountReaderOptions options, CancellationToken cancellationToken)
