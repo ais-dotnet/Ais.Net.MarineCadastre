@@ -497,7 +497,8 @@ internal sealed class TrackTable
     /// </summary>
     private sealed class RecentStrings
     {
-        private readonly byte[][] recentBytes = [[], [], []];
+        private readonly byte[][] recentBytes = [new byte[64], new byte[64], new byte[64]];
+        private readonly int[] recentLengths = new int[3];
         private readonly string[] recentStrings = [string.Empty, string.Empty, string.Empty];
 
         public string Get(int slot, ReadOnlySpan<byte> text)
@@ -507,13 +508,20 @@ internal sealed class TrackTable
                 return string.Empty;
             }
 
-            if (text.SequenceEqual(this.recentBytes[slot]))
+            if (text.SequenceEqual(this.recentBytes[slot].AsSpan(0, this.recentLengths[slot])))
             {
                 return this.recentStrings[slot];
             }
 
+            // A miss costs the string and nothing else: the bytes are kept in a buffer that only grows.
             string value = Encoding.UTF8.GetString(text);
-            this.recentBytes[slot] = text.ToArray();
+            if (text.Length > this.recentBytes[slot].Length)
+            {
+                this.recentBytes[slot] = new byte[Math.Max(text.Length, 2 * this.recentBytes[slot].Length)];
+            }
+
+            text.CopyTo(this.recentBytes[slot]);
+            this.recentLengths[slot] = text.Length;
             this.recentStrings[slot] = value;
             return value;
         }
