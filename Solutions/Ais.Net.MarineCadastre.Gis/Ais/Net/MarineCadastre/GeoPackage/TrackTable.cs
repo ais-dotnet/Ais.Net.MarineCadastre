@@ -336,15 +336,17 @@ internal sealed class TrackTable
             parameters.Add((long)mmsi);
         }
 
+        // The 'auto' modifier reads ISO text, Unix seconds and Julian days alike, matching ReadTimestamp,
+        // so the pre-filter never discards a row the client-side check would keep.
         if (options.From is { } from)
         {
-            conditions.Add($"datetime(t.{QuoteIdentifier(this.attributeColumns[EndTimeOrdinal - MmsiOrdinal]!)}) >= datetime(?)");
+            conditions.Add($"datetime(t.{QuoteIdentifier(this.attributeColumns[EndTimeOrdinal - MmsiOrdinal]!)}, 'auto') >= datetime(?)");
             parameters.Add(from.UtcDateTime.ToString(SqlDateTimeFormat, CultureInfo.InvariantCulture));
         }
 
         if (options.To is { } to)
         {
-            conditions.Add($"datetime(t.{QuoteIdentifier(this.attributeColumns[StartTimeOrdinal - MmsiOrdinal]!)}) <= datetime(?)");
+            conditions.Add($"datetime(t.{QuoteIdentifier(this.attributeColumns[StartTimeOrdinal - MmsiOrdinal]!)}, 'auto') <= datetime(?)");
             parameters.Add(to.UtcDateTime.ToString(SqlDateTimeFormat, CultureInfo.InvariantCulture));
         }
 

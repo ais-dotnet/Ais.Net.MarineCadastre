@@ -73,6 +73,23 @@ public sealed class GeoTiffBuilder : IDisposable
 
     public string? GdalMetadata { get; init; }
 
+    /// <summary>Gets a compression code to declare in the directory instead of the one actually used.</summary>
+    public int? DeclaredCompression { get; init; }
+
+    public int SamplesPerPixel { get; init; } = 1;
+
+    /// <summary>Gets a value indicating whether georeferencing is written as a ModelTransformation matrix rather than tiepoint and scale.</summary>
+    public bool UseModelTransformation { get; init; }
+
+    /// <summary>Gets a value indicating whether the ModelTransformation carries rotation terms.</summary>
+    public bool RotatedTransformation { get; init; }
+
+    /// <summary>Gets a value indicating whether the pixel scale tag is left out, leaving a tiepoint alone.</summary>
+    public bool OmitPixelScale { get; init; }
+
+    /// <summary>Gets a value indicating whether all-zero blocks are written with no data and a zero byte count, as GDAL's SPARSE_OK does.</summary>
+    public bool SparseEmptyBlocks { get; init; }
+
     /// <summary>
     /// Adds an overview level. Levels are written in the order added and should halve each time.
     /// </summary>
@@ -105,6 +122,13 @@ public sealed class GeoTiffBuilder : IDisposable
                 {
                     int rows = tiled ? blockHeight : Math.Min(blockHeight, height - (by * blockHeight));
                     byte[] raw = this.EncodeBlock(cells, width, height, bx * blockWidth, by * blockHeight, blockWidth, rows);
+                    if (this.SparseEmptyBlocks && !raw.AsSpan().ContainsAnyExcept((byte)0))
+                    {
+                        offsets.Add(0);
+                        counts.Add(0);
+                        continue;
+                    }
+
                     byte[] stored = this.Compression switch
                     {
                         TiffCompression.None => raw,
@@ -123,9 +147,9 @@ public sealed class GeoTiffBuilder : IDisposable
                 new(256, 4, [width]),
                 new(257, 4, [height]),
                 new(258, 3, [this.BitsPerSample]),
-                new(259, 3, [(long)this.Compression]),
+                new(259, 3, [this.DeclaredCompression ?? (long)this.Compression]),
                 new(262, 3, [1]),
-                new(277, 3, [1]),
+                new(277, 3, [this.SamplesPerPixel]),
                 new(284, 3, [1]),
                 new(317, 3, [this.Predictor]),
                 new(339, 3, [this.SignedSamples ? 2L : 1L]),
@@ -149,8 +173,26 @@ public sealed class GeoTiffBuilder : IDisposable
             {
                 double tiepointX = this.PixelIsPoint ? this.OriginX + (this.CellSize / 2) : this.OriginX;
                 double tiepointY = this.PixelIsPoint ? this.OriginY - (this.CellSize / 2) : this.OriginY;
-                entries.Add(new(33550, 12, Doubles: [this.CellSize, this.CellSize, 0]));
-                entries.Add(new(33922, 12, Doubles: [0, 0, 0, tiepointX, tiepointY, 0]));
+                if (this.UseModelTransformation)
+                {
+                    double rotation = this.RotatedTransformation ? 1 : 0;
+                    entries.Add(new(34264, 12, Doubles:
+                    [
+                        this.CellSize, rotation, 0, tiepointX,
+                        rotation, -this.CellSize, 0, tiepointY,
+                        0, 0, 0, 0,
+                        0, 0, 0, 1,
+                    ]));
+                }
+                else
+                {
+                    if (!this.OmitPixelScale)
+                    {
+                        entries.Add(new(33550, 12, Doubles: [this.CellSize, this.CellSize, 0]));
+                    }
+
+                    entries.Add(new(33922, 12, Doubles: [0, 0, 0, tiepointX, tiepointY, 0]));
+                }
 
                 if (!this.OmitGeoKeys)
                 {
