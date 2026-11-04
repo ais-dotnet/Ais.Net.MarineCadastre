@@ -187,6 +187,7 @@
       "ais.net.marinecadastre.gis": {
         "type": "Project",
         "dependencies": {
+          "Ais.Net.MarineCadastre": "[1.0.0, )",
           "Ais.Net.Models": "[1.1.0, )",
           "Microsoft.Data.Sqlite": "[10.0.14, )",
           "SQLitePCLRaw.core": "[2.1.13, )",

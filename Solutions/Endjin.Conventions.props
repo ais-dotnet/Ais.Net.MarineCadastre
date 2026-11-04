@@ -13,7 +13,7 @@
     which reproduces two things about how it worked:
 
       - It is opt-in per project. A Directory.Build.props would apply to every project in the
-        solution, silently turning on warnings-as-errors and XML documentation for the Benchmarks and Specs projects,
+        solution, silently turning on warnings-as-errors and XML documentation for the Benchmarks and Tests projects,
         which never had them.
       - It is imported after the .NET SDK's own props, which matters for RootNamespace: the SDK
         defaults it to the project name, so clearing it from a Directory.Build.props (imported before

@@ -1,0 +1,171 @@
+#nullable enable
+Ais.Net.MarineCadastre.Tracks.MarineCadastreTrackReader
+Ais.Net.MarineCadastre.Tracks.VesselTrack
+Ais.Net.MarineCadastre.Tracks.VesselTrack.<Clone>$() -> Ais.Net.MarineCadastre.Tracks.VesselTrack!
+Ais.Net.MarineCadastre.Tracks.VesselTrack.CallSign.get -> string!
+Ais.Net.MarineCadastre.Tracks.VesselTrack.CallSign.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Cargo.get -> uint?
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Cargo.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Deconstruct(out long Id, out uint Mmsi, out System.DateTimeOffset StartTime, out System.DateTimeOffset EndTime, out System.Collections.Generic.IReadOnlyList<Ais.Net.Models.Abstractions.Position>! Points) -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Draught.get -> double?
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Draught.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Duration.get -> System.TimeSpan
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Duration.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.EndTime.get -> System.DateTimeOffset
+Ais.Net.MarineCadastre.Tracks.VesselTrack.EndTime.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Envelope.get -> Ais.Net.MarineCadastre.BoundingBox
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Envelope.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Equals(Ais.Net.MarineCadastre.Tracks.VesselTrack? other) -> bool
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Id.get -> long
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Id.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.ImoNumber.get -> uint?
+Ais.Net.MarineCadastre.Tracks.VesselTrack.ImoNumber.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.IsClassB.get -> bool
+Ais.Net.MarineCadastre.Tracks.VesselTrack.IsClassB.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Length.get -> uint?
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Length.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Mmsi.get -> uint
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Mmsi.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.NavigationStatus.get -> Ais.Net.NavigationStatus
+Ais.Net.MarineCadastre.Tracks.VesselTrack.NavigationStatus.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Points.get -> System.Collections.Generic.IReadOnlyList<Ais.Net.Models.Abstractions.Position>!
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Points.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.ShipType.get -> Ais.Net.ShipType
+Ais.Net.MarineCadastre.Tracks.VesselTrack.ShipType.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.ShipTypeName.get -> string!
+Ais.Net.MarineCadastre.Tracks.VesselTrack.ShipTypeName.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.StartTime.get -> System.DateTimeOffset
+Ais.Net.MarineCadastre.Tracks.VesselTrack.StartTime.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.VesselName.get -> string!
+Ais.Net.MarineCadastre.Tracks.VesselTrack.VesselName.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.VesselTrack(long Id, uint Mmsi, System.DateTimeOffset StartTime, System.DateTimeOffset EndTime, System.Collections.Generic.IReadOnlyList<Ais.Net.Models.Abstractions.Position>! Points) -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Width.get -> uint?
+Ais.Net.MarineCadastre.Tracks.VesselTrack.Width.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions
+Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.<Clone>$() -> Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions!
+Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.Bounds.get -> Ais.Net.MarineCadastre.BoundingBox?
+Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.Bounds.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.Equals(Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions? other) -> bool
+Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.From.get -> System.DateTimeOffset?
+Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.From.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.Mmsi.get -> uint?
+Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.Mmsi.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.ShipTypeSource.get -> Ais.Net.MarineCadastre.ShipTypeSource
+Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.ShipTypeSource.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.TableName.get -> string?
+Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.TableName.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.To.get -> System.DateTimeOffset?
+Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.To.init -> void
+Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.VesselTrackReaderOptions() -> void
+Ais.Net.MarineCadastre.TransitCounts.MarineCadastreTransitCountReader
+Ais.Net.MarineCadastre.TransitCounts.TransitCell
+Ais.Net.MarineCadastre.TransitCounts.TransitCell.Centre.get -> Ais.Net.Models.Abstractions.Position
+Ais.Net.MarineCadastre.TransitCounts.TransitCell.Centre.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCell.Column.get -> int
+Ais.Net.MarineCadastre.TransitCounts.TransitCell.Column.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCell.Deconstruct(out int Column, out int Row, out Ais.Net.Models.Abstractions.Position Centre, out uint Transits) -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCell.Equals(Ais.Net.MarineCadastre.TransitCounts.TransitCell other) -> bool
+Ais.Net.MarineCadastre.TransitCounts.TransitCell.Row.get -> int
+Ais.Net.MarineCadastre.TransitCounts.TransitCell.Row.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCell.TransitCell() -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCell.TransitCell(int Column, int Row, Ais.Net.Models.Abstractions.Position Centre, uint Transits) -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCell.Transits.get -> uint
+Ais.Net.MarineCadastre.TransitCounts.TransitCell.Transits.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCountRaster
+Ais.Net.MarineCadastre.TransitCounts.TransitCountRaster.CellSize(int level = 0) -> (double Width, double Height)
+Ais.Net.MarineCadastre.TransitCounts.TransitCountRaster.CountAt(Ais.Net.Models.Abstractions.Position position, int level = 0) -> uint
+Ais.Net.MarineCadastre.TransitCounts.TransitCountRaster.Dimensions(int level = 0) -> (int Columns, int Rows)
+Ais.Net.MarineCadastre.TransitCounts.TransitCountRaster.Dispose() -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCountRaster.Extent.get -> Ais.Net.MarineCadastre.BoundingBox
+Ais.Net.MarineCadastre.TransitCounts.TransitCountRaster.IsProjected.get -> bool
+Ais.Net.MarineCadastre.TransitCounts.TransitCountRaster.LevelCount.get -> int
+Ais.Net.MarineCadastre.TransitCounts.TransitCountRaster.NoData.get -> uint?
+Ais.Net.MarineCadastre.TransitCounts.TransitCountRaster.Observe(Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions? options = null) -> System.IObservable<Ais.Net.MarineCadastre.TransitCounts.TransitCell>!
+Ais.Net.MarineCadastre.TransitCounts.TransitCountRaster.ObserveTiles(Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions? options = null) -> System.IObservable<Ais.Net.MarineCadastre.TransitCounts.TransitTile!>!
+Ais.Net.MarineCadastre.TransitCounts.TransitCountRaster.Path.get -> string!
+Ais.Net.MarineCadastre.TransitCounts.TransitCountRaster.Read(Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions? options = null) -> System.Collections.Generic.IEnumerable<Ais.Net.MarineCadastre.TransitCounts.TransitCell>!
+Ais.Net.MarineCadastre.TransitCounts.TransitCountRaster.ReadTiles(Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions? options = null) -> System.Collections.Generic.IEnumerable<Ais.Net.MarineCadastre.TransitCounts.TransitTile!>!
+Ais.Net.MarineCadastre.TransitCounts.TransitCountRaster.Statistics.get -> Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics?
+Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions
+Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions.<Clone>$() -> Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions!
+Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions.Bounds.get -> Ais.Net.MarineCadastre.BoundingBox?
+Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions.Bounds.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions.Equals(Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions? other) -> bool
+Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions.Level.get -> int
+Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions.Level.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions.MinimumTransits.get -> uint
+Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions.MinimumTransits.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions.TransitCountReaderOptions() -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.<Clone>$() -> Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics!
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Count.get -> long?
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Count.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Deconstruct(out long? Count, out double Minimum, out double Maximum, out double Mean, out double StandardDeviation) -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Equals(Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics? other) -> bool
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Maximum.get -> double
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Maximum.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Mean.get -> double
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Mean.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Minimum.get -> double
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Minimum.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.StandardDeviation.get -> double
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.StandardDeviation.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.TransitCountStatistics(long? Count, double Minimum, double Maximum, double Mean, double StandardDeviation) -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitTile
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.<Clone>$() -> Ais.Net.MarineCadastre.TransitCounts.TransitTile!
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.Bounds.get -> Ais.Net.MarineCadastre.BoundingBox
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.Bounds.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.Column.get -> int
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.Column.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.Counts.get -> System.ReadOnlyMemory<uint>
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.Deconstruct(out int Column, out int Row, out int Level, out int FirstCellColumn, out int FirstCellRow, out int Width, out int Height, out Ais.Net.MarineCadastre.BoundingBox Bounds, out System.ReadOnlyMemory<uint> Counts) -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.Equals(Ais.Net.MarineCadastre.TransitCounts.TransitTile? other) -> bool
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.FirstCellColumn.get -> int
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.FirstCellColumn.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.FirstCellRow.get -> int
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.FirstCellRow.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.Height.get -> int
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.Level.get -> int
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.Level.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.Row.get -> int
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.Row.init -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.this[int column, int row].get -> uint
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.TransitTile(int Column, int Row, int Level, int FirstCellColumn, int FirstCellRow, int Width, int Height, Ais.Net.MarineCadastre.BoundingBox Bounds, System.ReadOnlyMemory<uint> Counts) -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitTile.Width.get -> int
+override Ais.Net.MarineCadastre.Tracks.VesselTrack.Equals(object? obj) -> bool
+override Ais.Net.MarineCadastre.Tracks.VesselTrack.GetHashCode() -> int
+override Ais.Net.MarineCadastre.Tracks.VesselTrack.ToString() -> string!
+override Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.Equals(object? obj) -> bool
+override Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.GetHashCode() -> int
+override Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.ToString() -> string!
+override Ais.Net.MarineCadastre.TransitCounts.TransitCell.GetHashCode() -> int
+override Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions.Equals(object? obj) -> bool
+override Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions.GetHashCode() -> int
+override Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions.ToString() -> string!
+override Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Equals(object? obj) -> bool
+override Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.GetHashCode() -> int
+override Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.ToString() -> string!
+override Ais.Net.MarineCadastre.TransitCounts.TransitTile.Equals(object? obj) -> bool
+override Ais.Net.MarineCadastre.TransitCounts.TransitTile.GetHashCode() -> int
+override Ais.Net.MarineCadastre.TransitCounts.TransitTile.ToString() -> string!
+static Ais.Net.MarineCadastre.Tracks.MarineCadastreTrackReader.Observe(string! path, Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions? options = null) -> System.IObservable<Ais.Net.MarineCadastre.Tracks.VesselTrack!>!
+static Ais.Net.MarineCadastre.Tracks.MarineCadastreTrackReader.Read(string! path, Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions? options = null) -> System.Collections.Generic.IEnumerable<Ais.Net.MarineCadastre.Tracks.VesselTrack!>!
+static Ais.Net.MarineCadastre.Tracks.VesselTrack.operator !=(Ais.Net.MarineCadastre.Tracks.VesselTrack? left, Ais.Net.MarineCadastre.Tracks.VesselTrack? right) -> bool
+static Ais.Net.MarineCadastre.Tracks.VesselTrack.operator ==(Ais.Net.MarineCadastre.Tracks.VesselTrack? left, Ais.Net.MarineCadastre.Tracks.VesselTrack? right) -> bool
+static Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.Default.get -> Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions!
+static Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.operator !=(Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions? left, Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions? right) -> bool
+static Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions.operator ==(Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions? left, Ais.Net.MarineCadastre.Tracks.VesselTrackReaderOptions? right) -> bool
+static Ais.Net.MarineCadastre.TransitCounts.MarineCadastreTransitCountReader.Observe(string! path, Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions? options = null) -> System.IObservable<Ais.Net.MarineCadastre.TransitCounts.TransitCell>!
+static Ais.Net.MarineCadastre.TransitCounts.MarineCadastreTransitCountReader.ObserveTiles(string! path, Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions? options = null) -> System.IObservable<Ais.Net.MarineCadastre.TransitCounts.TransitTile!>!
+static Ais.Net.MarineCadastre.TransitCounts.MarineCadastreTransitCountReader.Open(string! path) -> Ais.Net.MarineCadastre.TransitCounts.TransitCountRaster!
+static Ais.Net.MarineCadastre.TransitCounts.TransitCell.operator !=(Ais.Net.MarineCadastre.TransitCounts.TransitCell left, Ais.Net.MarineCadastre.TransitCounts.TransitCell right) -> bool
+static Ais.Net.MarineCadastre.TransitCounts.TransitCell.operator ==(Ais.Net.MarineCadastre.TransitCounts.TransitCell left, Ais.Net.MarineCadastre.TransitCounts.TransitCell right) -> bool
+static Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions.Default.get -> Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions!
+static Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions.operator !=(Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions? left, Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions? right) -> bool
+static Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions.operator ==(Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions? left, Ais.Net.MarineCadastre.TransitCounts.TransitCountReaderOptions? right) -> bool
+static Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.operator !=(Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics? left, Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics? right) -> bool
+static Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.operator ==(Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics? left, Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics? right) -> bool
+static Ais.Net.MarineCadastre.TransitCounts.TransitTile.operator !=(Ais.Net.MarineCadastre.TransitCounts.TransitTile? left, Ais.Net.MarineCadastre.TransitCounts.TransitTile? right) -> bool
+static Ais.Net.MarineCadastre.TransitCounts.TransitTile.operator ==(Ais.Net.MarineCadastre.TransitCounts.TransitTile? left, Ais.Net.MarineCadastre.TransitCounts.TransitTile? right) -> bool
+~override Ais.Net.MarineCadastre.TransitCounts.TransitCell.Equals(object obj) -> bool
+~override Ais.Net.MarineCadastre.TransitCounts.TransitCell.ToString() -> string

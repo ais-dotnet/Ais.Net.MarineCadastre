@@ -3,7 +3,7 @@ using Ais.Net.Models.Abstractions;
 
 using Shouldly;
 
-namespace Ais.Net.MarineCadastre.Specs;
+namespace Ais.Net.MarineCadastre.Tests.GeoPackage;
 
 [TestClass]
 public class GeoPackageGeometryTests
@@ -12,9 +12,9 @@ public class GeoPackageGeometryTests
     private static readonly Position[] PartB = [new(47.62895, -122.39129), new(47.63, -122.39), new(47.631, -122.389)];
 
     [TestMethod]
-    public void DecodesARealTrackBlob()
+    public void DecodesATrackBlobWithFloatingPointNoise()
     {
-        // OBJECTID 1 of AISVesselTracks2026-01.gpkg: header, no envelope, little-endian MultiLineString of one two-point part.
+        // Shaped like a MarineCadastre track row: header, no envelope, little-endian MultiLineString of one two-point part.
         byte[] blob =
         [
             0x47, 0x50, 0x00, 0x01, 0xE6, 0x10, 0x00, 0x00,

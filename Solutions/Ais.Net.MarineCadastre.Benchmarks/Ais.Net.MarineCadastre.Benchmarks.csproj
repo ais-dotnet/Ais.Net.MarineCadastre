@@ -17,6 +17,8 @@
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" />
+    <!-- Decompresses the NOAA daily CSV (.csv.zst) that the CSV benchmarks download on first use. -->
+    <PackageReference Include="ZstdSharp.Port" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,14 +27,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The GeoPackage and GeoTIFF fixture builders are shared with the Specs project rather than duplicated. -->
-    <Compile Include="..\Ais.Net.MarineCadastre.Specs\TestSupport\GeoPackageBuilder.cs" Link="TestSupport\GeoPackageBuilder.cs" />
-    <Compile Include="..\Ais.Net.MarineCadastre.Specs\TestSupport\GeoTiffBuilder.cs" Link="TestSupport\GeoTiffBuilder.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- Fallback input when AIS_NET_MARINECADASTRE_CSV is not set: the first rows of a real daily file. -->
-    <Content Include="samples\marinecadastre-sample.csv" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The GeoPackage and GeoTIFF fixture builders are shared with the Tests project rather than duplicated. -->
+    <Compile Include="..\Ais.Net.MarineCadastre.Tests\TestSupport\GeoPackageBuilder.cs" Link="TestSupport\GeoPackageBuilder.cs" />
+    <Compile Include="..\Ais.Net.MarineCadastre.Tests\TestSupport\GeoTiffBuilder.cs" Link="TestSupport\GeoTiffBuilder.cs" />
   </ItemGroup>
 
 </Project>

@@ -38,6 +38,13 @@ public sealed record VesselTrackReaderOptions
     public uint? Mmsi { get; init; }
 
     /// <summary>
+    /// Gets the column that supplies <see cref="VesselTrack.ShipType"/>. Defaults to
+    /// <see cref="ShipTypeSource.VesselTypeThenCargo"/>. It does not affect
+    /// <see cref="VesselTrack.ShipTypeName"/>, which always comes from the file's vessel type name column.
+    /// </summary>
+    public ShipTypeSource ShipTypeSource { get; init; } = ShipTypeSource.VesselTypeThenCargo;
+
+    /// <summary>
     /// Gets the name of the feature table to read. When <see langword="null"/> (the default) the first
     /// features table registered in the GeoPackage's <c>gpkg_contents</c> is used, which is the right
     /// choice for the files MarineCadastre publishes, since each holds one month in one table.

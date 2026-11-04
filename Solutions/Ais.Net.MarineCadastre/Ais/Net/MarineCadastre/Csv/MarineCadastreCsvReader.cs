@@ -24,56 +24,56 @@ public static class MarineCadastreCsvReader
     /// Reads messages from a CSV stream.
     /// </summary>
     /// <param name="stream">The CSV content, header line first.</param>
-    /// <param name="options">Reader settings; <see cref="MarineCadastreReaderOptions.Default"/> when omitted.</param>
+    /// <param name="options">Reader settings; <see cref="MarineCadastreCsvReaderOptions.Default"/> when omitted.</param>
     /// <returns>The messages, in file order.</returns>
-    public static IEnumerable<AisMessageBase> Read(Stream stream, MarineCadastreReaderOptions? options = null)
+    public static IEnumerable<AisMessageBase> Read(Stream stream, MarineCadastreCsvReaderOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        return ReadCore(stream, options ?? MarineCadastreReaderOptions.Default);
+        return ReadCore(stream, options ?? MarineCadastreCsvReaderOptions.Default);
     }
 
     /// <summary>
     /// Reads messages from a CSV file.
     /// </summary>
     /// <param name="path">Path of the CSV file.</param>
-    /// <param name="options">Reader settings; <see cref="MarineCadastreReaderOptions.Default"/> when omitted.</param>
+    /// <param name="options">Reader settings; <see cref="MarineCadastreCsvReaderOptions.Default"/> when omitted.</param>
     /// <returns>The messages, in file order.</returns>
-    public static IEnumerable<AisMessageBase> ReadFile(string path, MarineCadastreReaderOptions? options = null)
+    public static IEnumerable<AisMessageBase> ReadFile(string path, MarineCadastreCsvReaderOptions? options = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
-        return ReadFileCore(path, options ?? MarineCadastreReaderOptions.Default);
+        return ReadFileCore(path, options ?? MarineCadastreCsvReaderOptions.Default);
     }
 
     /// <summary>
     /// Reads messages from a CSV stream asynchronously.
     /// </summary>
     /// <param name="stream">The CSV content, header line first.</param>
-    /// <param name="options">Reader settings; <see cref="MarineCadastreReaderOptions.Default"/> when omitted.</param>
+    /// <param name="options">Reader settings; <see cref="MarineCadastreCsvReaderOptions.Default"/> when omitted.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The messages, in file order.</returns>
-    public static IAsyncEnumerable<AisMessageBase> ReadAsync(Stream stream, MarineCadastreReaderOptions? options = null, CancellationToken cancellationToken = default)
+    public static IAsyncEnumerable<AisMessageBase> ReadAsync(Stream stream, MarineCadastreCsvReaderOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        return ReadAsyncCore(stream, options ?? MarineCadastreReaderOptions.Default, cancellationToken);
+        return ReadAsyncCore(stream, options ?? MarineCadastreCsvReaderOptions.Default, cancellationToken);
     }
 
     /// <summary>
     /// Reads messages from a CSV file asynchronously.
     /// </summary>
     /// <param name="path">Path of the CSV file.</param>
-    /// <param name="options">Reader settings; <see cref="MarineCadastreReaderOptions.Default"/> when omitted.</param>
+    /// <param name="options">Reader settings; <see cref="MarineCadastreCsvReaderOptions.Default"/> when omitted.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The messages, in file order.</returns>
-    public static IAsyncEnumerable<AisMessageBase> ReadFileAsync(string path, MarineCadastreReaderOptions? options = null, CancellationToken cancellationToken = default)
+    public static IAsyncEnumerable<AisMessageBase> ReadFileAsync(string path, MarineCadastreCsvReaderOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
-        return ReadFileAsyncCore(path, options ?? MarineCadastreReaderOptions.Default, cancellationToken);
+        return ReadFileAsyncCore(path, options ?? MarineCadastreCsvReaderOptions.Default, cancellationToken);
     }
 
     private static FileStream OpenFile(string path, bool isAsync) =>
         new(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, isAsync ? FileOptions.Asynchronous | FileOptions.SequentialScan : FileOptions.SequentialScan);
 
-    private static IEnumerable<AisMessageBase> ReadFileCore(string path, MarineCadastreReaderOptions options)
+    private static IEnumerable<AisMessageBase> ReadFileCore(string path, MarineCadastreCsvReaderOptions options)
     {
         using FileStream stream = OpenFile(path, isAsync: false);
         foreach (AisMessageBase message in ReadCore(stream, options))
@@ -82,7 +82,7 @@ public static class MarineCadastreCsvReader
         }
     }
 
-    private static async IAsyncEnumerable<AisMessageBase> ReadFileAsyncCore(string path, MarineCadastreReaderOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
+    private static async IAsyncEnumerable<AisMessageBase> ReadFileAsyncCore(string path, MarineCadastreCsvReaderOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         await using FileStream stream = OpenFile(path, isAsync: true);
         await foreach (AisMessageBase message in ReadAsyncCore(stream, options, cancellationToken).ConfigureAwait(false))
@@ -91,7 +91,7 @@ public static class MarineCadastreCsvReader
         }
     }
 
-    private static IEnumerable<AisMessageBase> ReadCore(Stream stream, MarineCadastreReaderOptions options)
+    private static IEnumerable<AisMessageBase> ReadCore(Stream stream, MarineCadastreCsvReaderOptions options)
     {
         MarineCadastreCsvParser parser = new(options);
         LineBuffer buffer = new(stream);
@@ -130,7 +130,7 @@ public static class MarineCadastreCsvReader
         }
     }
 
-    private static async IAsyncEnumerable<AisMessageBase> ReadAsyncCore(Stream stream, MarineCadastreReaderOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
+    private static async IAsyncEnumerable<AisMessageBase> ReadAsyncCore(Stream stream, MarineCadastreCsvReaderOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         MarineCadastreCsvParser parser = new(options);
         LineBuffer buffer = new(stream);

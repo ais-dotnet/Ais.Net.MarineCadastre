@@ -4,7 +4,7 @@ using Ais.Net.MarineCadastre.Csv;
 
 using Shouldly;
 
-namespace Ais.Net.MarineCadastre.Specs;
+namespace Ais.Net.MarineCadastre.Tests.Csv;
 
 [TestClass]
 public class CsvLineTests
@@ -19,14 +19,14 @@ public class CsvLineTests
     [DataRow("\"say \"\"hi\"\"\",c", "say \"hi\"|c")]
     [DataRow("a,\"\",c", "a||c")]
     [DataRow("a,\"unterminated,c", "a|unterminated,c")]
-    [DataRow("368164470,2026-01-01 00:00:03,-76.31518,36.84956,0.0,149.6,19,EASTERN BRANCH,,WDL7894,52,0,20,8,2.3,52,A", "368164470|2026-01-01 00:00:03|-76.31518|36.84956|0.0|149.6|19|EASTERN BRANCH||WDL7894|52|0|20|8|2.3|52|A")]
-    [DataRow("368025040,2026-01-01 00:00:04,-122.50573,48.75658,0.0,,,TRUTINA,,WDJ9334,37,,13,4,,,B", "368025040|2026-01-01 00:00:04|-122.50573|48.75658|0.0|||TRUTINA||WDJ9334|37||13|4|||B")]
+    [DataRow("999000003,2026-01-01 00:00:03,-76.31518,36.84956,0.0,149.6,19,EXAMPLE VESSEL,,ZZZ0003,52,0,20,8,2.3,52,A", "999000003|2026-01-01 00:00:03|-76.31518|36.84956|0.0|149.6|19|EXAMPLE VESSEL||ZZZ0003|52|0|20|8|2.3|52|A")]
+    [DataRow("999000002,2026-01-01 00:00:04,-122.50573,48.75658,0.0,,,SAMPLER,,ZZZ0002,37,,13,4,,,B", "999000002|2026-01-01 00:00:04|-122.50573|48.75658|0.0|||SAMPLER||ZZZ0002|37||13|4|||B")]
     [DataRow("aaaaaaaaaaaaaaa,", "aaaaaaaaaaaaaaa|")]
     [DataRow(",aaaaaaaaaaaaaa,", "|aaaaaaaaaaaaaa|")]
     [DataRow("aaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaa")]
     [DataRow("aaaaaaaaaaaaaaa,bbbbbbbbbbbbbbb,c", "aaaaaaaaaaaaaaa|bbbbbbbbbbbbbbb|c")]
     [DataRow("a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,0,1,2,3,4,5,6,7,", "a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|0|1|2|3|4|5|6|7|")]
-    [DataRow("368164470,2026-01-01 00:00:03,-76.31518,36.84956,0.0,149.6,19,\"BRANCH, EASTERN\",,WDL7894,52,0,20,8,2.3,52,A", "368164470|2026-01-01 00:00:03|-76.31518|36.84956|0.0|149.6|19|BRANCH, EASTERN||WDL7894|52|0|20|8|2.3|52|A")]
+    [DataRow("999000003,2026-01-01 00:00:03,-76.31518,36.84956,0.0,149.6,19,\"VESSEL, EXAMPLE\",,ZZZ0003,52,0,20,8,2.3,52,A", "999000003|2026-01-01 00:00:03|-76.31518|36.84956|0.0|149.6|19|VESSEL, EXAMPLE||ZZZ0003|52|0|20|8|2.3|52|A")]
     public void SplitsFieldsAndUnescapesQuotes(string input, string expected)
     {
         byte[] line = Encoding.UTF8.GetBytes(input);

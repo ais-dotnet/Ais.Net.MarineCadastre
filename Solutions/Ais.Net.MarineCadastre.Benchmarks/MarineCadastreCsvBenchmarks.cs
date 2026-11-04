@@ -14,7 +14,7 @@ namespace Ais.Net.MarineCadastre.Benchmarks;
 [MemoryDiagnoser]
 public class MarineCadastreCsvBenchmarks
 {
-    private static readonly MarineCadastreReaderOptions PositionsOnly = new() { EmitStaticData = false };
+    private static readonly MarineCadastreCsvReaderOptions PositionsOnly = new() { EmitStaticData = false };
 
     private byte[] csv = [];
 

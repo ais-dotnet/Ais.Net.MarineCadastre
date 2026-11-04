@@ -4,7 +4,7 @@ using Ais.Net.MarineCadastre.Csv;
 
 using Shouldly;
 
-namespace Ais.Net.MarineCadastre.Specs;
+namespace Ais.Net.MarineCadastre.Tests.Csv;
 
 [TestClass]
 public class LineBufferTests

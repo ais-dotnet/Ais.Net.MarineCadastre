@@ -1,11 +1,11 @@
 using System.Globalization;
 using System.Text;
 
-using Ais.Net.MarineCadastre.GeoPackage;
+using Ais.Net.MarineCadastre.Tracks;
 
 using Shouldly;
 
-namespace Ais.Net.MarineCadastre.Specs;
+namespace Ais.Net.MarineCadastre.Tests.Tracks;
 
 [TestClass]
 public class TimestampParsingTests
@@ -22,7 +22,7 @@ public class TimestampParsingTests
     [DataRow("9999-12-31T23:59:59Z")]
     public void FastPathAgreesWithTheFrameworkParser(string text)
     {
-        bool parsed = TrackTable.TryParseTimestamp(Encoding.UTF8.GetBytes(text), out DateTimeOffset actual);
+        bool parsed = VesselTrackTable.TryParseTimestamp(Encoding.UTF8.GetBytes(text), out DateTimeOffset actual);
 
         parsed.ShouldBeTrue();
         DateTimeOffset expected = DateTimeOffset.Parse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
@@ -33,7 +33,7 @@ public class TimestampParsingTests
     [TestMethod]
     public void FractionDigitsBeyondTicksAreDropped()
     {
-        TrackTable.TryParseTimestamp("2026-01-31T23:59:59.12345678912Z"u8, out DateTimeOffset actual).ShouldBeTrue();
+        VesselTrackTable.TryParseTimestamp("2026-01-31T23:59:59.12345678912Z"u8, out DateTimeOffset actual).ShouldBeTrue();
 
         actual.ShouldBe(new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.Zero).AddTicks(1234567));
     }
@@ -54,6 +54,6 @@ public class TimestampParsingTests
     [DataRow("01/01/2026 00:00:00")]
     public void ShapesOutsideTheFastPathAreDeclined(string text)
     {
-        TrackTable.TryParseTimestamp(Encoding.UTF8.GetBytes(text), out _).ShouldBeFalse();
+        VesselTrackTable.TryParseTimestamp(Encoding.UTF8.GetBytes(text), out _).ShouldBeFalse();
     }
 }

@@ -58,7 +58,7 @@ public class VesselTrackBenchmarks
     [Benchmark]
     public long StepRowsOnly()
     {
-        using SqliteConnection connection = TrackTable.Open(this.path);
+        using SqliteConnection connection = VesselTrackTable.Open(this.path);
         using sqlite3_stmt statement = Prepare(connection);
         long bytes = 0;
         while (raw.sqlite3_step(statement) == raw.SQLITE_ROW)
@@ -75,7 +75,7 @@ public class VesselTrackBenchmarks
     [Benchmark]
     public long StepAndDecodeGeometry()
     {
-        using SqliteConnection connection = TrackTable.Open(this.path);
+        using SqliteConnection connection = VesselTrackTable.Open(this.path);
         using sqlite3_stmt statement = Prepare(connection);
         long points = 0;
         while (raw.sqlite3_step(statement) == raw.SQLITE_ROW)

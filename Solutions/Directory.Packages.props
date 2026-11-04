@@ -4,6 +4,10 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
+  <ItemGroup Label="Analyzers">
+    <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" />
+  </ItemGroup>
+
   <ItemGroup Label="Ais.Net.MarineCadastre">
     <PackageVersion Include="Ais.Net.Models" Version="1.1.0" />
   </ItemGroup>
@@ -14,12 +18,13 @@
     <PackageVersion Include="System.Reactive" Version="7.0.0" />
   </ItemGroup>
 
-  <ItemGroup Label="Ais.Net.MarineCadastre.Specs">
+  <ItemGroup Label="Ais.Net.MarineCadastre.Tests">
     <PackageVersion Include="Shouldly" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup Label="Ais.Net.MarineCadastre.Benchmarks">
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
+    <PackageVersion Include="ZstdSharp.Port" Version="0.8.8" />
   </ItemGroup>
 
 </Project>

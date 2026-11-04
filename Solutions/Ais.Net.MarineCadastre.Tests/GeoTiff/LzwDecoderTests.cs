@@ -3,7 +3,7 @@ using Ais.Net.MarineCadastre.TestSupport;
 
 using Shouldly;
 
-namespace Ais.Net.MarineCadastre.Specs;
+namespace Ais.Net.MarineCadastre.Tests.GeoTiff;
 
 [TestClass]
 public class LzwDecoderTests

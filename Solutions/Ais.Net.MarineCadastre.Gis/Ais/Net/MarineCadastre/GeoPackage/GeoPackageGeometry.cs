@@ -75,7 +75,15 @@ internal static class GeoPackageGeometry
         int written = 0;
         Walk(wkb, ref offset, points, ref written, countOnly: false);
 
-        envelope = count == 0 ? default : BoundingBox.FromPositions(points);
+        try
+        {
+            envelope = count == 0 ? default : BoundingBox.FromPositions(points);
+        }
+        catch (ArgumentException ex)
+        {
+            throw new InvalidDataException("The geometry has a coordinate that is NaN or outside the WGS84 range.", ex);
+        }
+
         return points;
     }
 

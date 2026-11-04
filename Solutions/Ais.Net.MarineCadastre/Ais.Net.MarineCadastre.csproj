@@ -21,10 +21,11 @@
 
   <ItemGroup>
     <PackageReference Include="Ais.Net.Models" />
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Ais.Net.MarineCadastre.Specs" />
+    <InternalsVisibleTo Include="Ais.Net.MarineCadastre.Tests" />
     <InternalsVisibleTo Include="Ais.Net.MarineCadastre.Benchmarks" />
   </ItemGroup>
 

@@ -24,10 +24,15 @@
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="SQLitePCLRaw.core" />
     <PackageReference Include="System.Reactive" />
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Ais.Net.MarineCadastre.Specs" />
+    <ProjectReference Include="..\Ais.Net.MarineCadastre\Ais.Net.MarineCadastre.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ais.Net.MarineCadastre.Tests" />
     <InternalsVisibleTo Include="Ais.Net.MarineCadastre.Benchmarks" />
   </ItemGroup>
 

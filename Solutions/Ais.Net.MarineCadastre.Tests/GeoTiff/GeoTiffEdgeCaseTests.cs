@@ -4,7 +4,7 @@ using Ais.Net.Models.Abstractions;
 
 using Shouldly;
 
-namespace Ais.Net.MarineCadastre.Specs;
+namespace Ais.Net.MarineCadastre.Tests.GeoTiff;
 
 /// <summary>
 /// GeoTIFF layouts and faults the main raster specs do not reach: matrix georeferencing, sparse
@@ -59,6 +59,29 @@ public class GeoTiffEdgeCaseTests
         using GeoTiffBuilder builder = new(Width, Height, Cells()) { OmitPixelScale = true };
 
         Should.Throw<InvalidDataException>(() => MarineCadastreTransitCountReader.Open(builder.Write())).Message.ShouldContain("tiepoint");
+    }
+
+    [TestMethod]
+    public void WorldWideWebMercatorExtentsClampToTheAntimeridian()
+    {
+        const double HalfWorld = 20037508.342789244;
+        using GeoTiffBuilder builder = new(Width, Height, Cells()) { OriginX = -HalfWorld, CellSize = 2 * HalfWorld / Width };
+
+        using TransitCountRaster raster = MarineCadastreTransitCountReader.Open(builder.Write());
+
+        raster.Extent.West.ShouldBe(-180, 1e-9);
+        raster.Extent.East.ShouldBe(180, 1e-9);
+        List<TransitTile> tiles = [.. raster.ReadTiles()];
+        tiles.ShouldNotBeEmpty();
+        tiles.ShouldAllBe(t => t.Bounds.West >= -180 && t.Bounds.East <= 180);
+    }
+
+    [TestMethod]
+    public void NonFiniteGeoreferencingIsRejected()
+    {
+        using GeoTiffBuilder builder = new(Width, Height, Cells()) { OriginX = double.NaN };
+
+        Should.Throw<InvalidDataException>(() => MarineCadastreTransitCountReader.Open(builder.Write())).Message.ShouldContain("NaN");
     }
 
     [TestMethod]

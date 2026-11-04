@@ -1,4 +1,4 @@
-// <copyright file="TrackTable.cs" company="Endjin Limited">
+// <copyright file="VesselTrackTable.cs" company="Endjin Limited">
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
@@ -7,13 +7,13 @@ using System.Text;
 
 using Ais.Net.Models.Abstractions;
 
-using Ais.Net.MarineCadastre.Tracks;
+using Ais.Net.MarineCadastre.GeoPackage;
 
 using Microsoft.Data.Sqlite;
 
 using SQLitePCL;
 
-namespace Ais.Net.MarineCadastre.GeoPackage;
+namespace Ais.Net.MarineCadastre.Tracks;
 
 /// <summary>
 /// The feature table of a tracks GeoPackage: which table and columns to read, the query that reads
@@ -26,7 +26,7 @@ namespace Ais.Net.MarineCadastre.GeoPackage;
 /// type negotiation of the ADO.NET layer, which together cost more than SQLite's own work on a file of
 /// a million rows.
 /// </remarks>
-internal sealed class TrackTable
+internal sealed class VesselTrackTable
 {
     // Ordinals in the select list built by Prepare. Attribute columns the file lacks are selected as
     // null so the ordinals never move.
@@ -77,7 +77,7 @@ internal sealed class TrackTable
     private readonly string? rtreeTable;
     private readonly string?[] attributeColumns;
 
-    private TrackTable(string tableName, string idColumn, string geometryColumn, string? rtreeTable, string?[] attributeColumns)
+    private VesselTrackTable(string tableName, string idColumn, string geometryColumn, string? rtreeTable, string?[] attributeColumns)
     {
         this.tableName = tableName;
         this.idColumn = idColumn;
@@ -112,7 +112,7 @@ internal sealed class TrackTable
     /// <param name="requestedTable">The table to read, or <see langword="null"/> to take the first features table in <c>gpkg_contents</c>.</param>
     /// <returns>The table description.</returns>
     /// <exception cref="InvalidDataException">Thrown when the file is not a usable tracks GeoPackage.</exception>
-    public static TrackTable Discover(SqliteConnection connection, string? requestedTable)
+    public static VesselTrackTable Discover(SqliteConnection connection, string? requestedTable)
     {
         string? tableName = requestedTable ?? Scalar(connection, "select table_name from gpkg_contents where data_type = 'features' order by table_name limit 1") as string;
         if (tableName is null)
@@ -173,7 +173,7 @@ internal sealed class TrackTable
         string rtreeName = $"rtree_{tableName}_{geometryColumn}";
         bool hasRtree = Scalar(connection, "select 1 from sqlite_master where type = 'table' and name = @name", ("@name", rtreeName)) is not null;
 
-        return new TrackTable(tableName, primaryKey ?? "rowid", geometryColumn, hasRtree ? rtreeName : null, attributeColumns);
+        return new VesselTrackTable(tableName, primaryKey ?? "rowid", geometryColumn, hasRtree ? rtreeName : null, attributeColumns);
     }
 
     /// <summary>
@@ -423,12 +423,12 @@ internal sealed class TrackTable
 
         uint? vesselType = ReadUInt32(statement, VesselTypeOrdinal);
         uint? cargo = ReadUInt32(statement, CargoOrdinal);
-        uint? chosenType = vesselType ?? cargo;
+        uint? chosenType = options.ShipTypeSource == ShipTypeSource.CargoThenVesselType ? cargo ?? vesselType : vesselType ?? cargo;
         uint? navigationStatus = ReadUInt32(statement, NavigationStatusOrdinal);
         ReadOnlySpan<byte> transceiver = ReadText(statement, TransceiverOrdinal).Trim((byte)' ');
         double draught = raw.sqlite3_column_double(statement, DraughtOrdinal);
 
-        return new VesselTrack(id, (uint)mmsiValue, start, end, points)
+        return new VesselTrack(id, (uint)mmsiValue, start, end, new PositionList(points))
         {
             Duration = ReadUInt32(statement, DurationOrdinal) is { } minutes ? TimeSpan.FromMinutes(minutes) : end - start,
             Envelope = envelope,

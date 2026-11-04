@@ -5,7 +5,7 @@ using Ais.Net.MarineCadastre.Csv;
 
 using Shouldly;
 
-namespace Ais.Net.MarineCadastre.Specs;
+namespace Ais.Net.MarineCadastre.Tests.Csv;
 
 [TestClass]
 public class NumberParsingTests
@@ -58,15 +58,15 @@ public class NumberParsingTests
     }
 
     [TestMethod]
-    public void RealRowsAgreeWithFrameworkParser()
+    public void TypicalRowsAgreeWithFrameworkParser()
     {
-        // Every numeric cell of a handful of real rows, including the rounding-sensitive five-decimal coordinates.
+        // Every numeric cell of a handful of rows shaped like MarineCadastre data, including the rounding-sensitive five-decimal coordinates.
         string[] rows =
         [
-            "368164470,2026-01-01 00:00:03,-76.31518,36.84956,0.0,149.6,19,EASTERN BRANCH,,WDL7894,52,0,20,8,2.3,52,A",
-            "255915644,2026-01-01 00:00:08,-79.61369,25.33373,,,168,SEABOARD GARDENIA,IMO9673630,CQ2102,71,0,170,28,6.9,71,A",
-            "316041768,2026-01-01 00:00:03,-125.92361,49.17016,7.1,95.1,95,DISCOVERY SERVER,,,79,0,15,10,2.0,79,A",
-            "338455424,2026-01-01 00:00:07,-122.39129,47.62895,0.0,,,TENFOUR,,,37,,15,4,,,B",
+            "999000003,2026-01-01 00:00:03,-76.31518,36.84956,0.0,149.6,19,EXAMPLE VESSEL,,ZZZ0003,52,0,20,8,2.3,52,A",
+            "999000006,2026-01-01 00:00:08,-79.61369,25.33373,,,168,SYNTHETIC CARRIER,IMO7000002,ZZ0006,71,0,170,28,6.9,71,A",
+            "999000007,2026-01-01 00:00:03,-125.92361,49.17016,7.1,95.1,95,PLACEHOLDER SHIP,,,79,0,15,10,2.0,79,A",
+            "999000008,2026-01-01 00:00:07,-122.39129,47.62895,0.0,,,NOTREAL,,,37,,15,4,,,B",
         ];
 
         foreach (string cell in rows.SelectMany(r => r.Split(',')).Where(c => c.Length > 0 && char.IsAsciiDigit(c[^1]) && !c.Contains(' ') && !c.Contains(':')))

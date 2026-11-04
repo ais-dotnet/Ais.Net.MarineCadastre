@@ -8,7 +8,7 @@ using Ais.Net.Models.Abstractions;
 
 using Shouldly;
 
-namespace Ais.Net.MarineCadastre.Specs;
+namespace Ais.Net.MarineCadastre.Tests.Tracks;
 
 [TestClass]
 public class MarineCadastreTrackReaderTests
@@ -27,11 +27,11 @@ public class MarineCadastreTrackReaderTests
     public void ReadsAttributesAndPoints()
     {
         using GeoPackageBuilder package = new();
-        package.Add(new TrackRow(255915644, Start, End, Miami)
+        package.Add(new TrackRow(999000006, Start, End, Miami)
         {
-            VesselName = "SEABOARD GARDENIA",
-            Imo = "IMO9673630",
-            CallSign = "CQ2102",
+            VesselName = "SYNTHETIC CARRIER",
+            Imo = "IMO7000002",
+            CallSign = "ZZ0006",
             VesselType = 71,
             VesselTypeName = "Cargo - Hazard A (Major)",
             NavigationStatus = 0,
@@ -46,15 +46,15 @@ public class MarineCadastreTrackReaderTests
         VesselTrack track = MarineCadastreTrackReader.Read(package.Path).Single();
 
         track.Id.ShouldBe(1);
-        track.Mmsi.ShouldBe(255915644u);
+        track.Mmsi.ShouldBe(999000006u);
         track.StartTime.ShouldBe(Start);
         track.EndTime.ShouldBe(End);
         track.Duration.ShouldBe(TimeSpan.FromMinutes(5));
         track.Points.ShouldBe(Miami);
         track.Envelope.ShouldBe(new BoundingBox(-80.18398, 25.79027, -80.18396, 25.79028));
-        track.VesselName.ShouldBe("SEABOARD GARDENIA");
-        track.ImoNumber.ShouldBe(9673630u);
-        track.CallSign.ShouldBe("CQ2102");
+        track.VesselName.ShouldBe("SYNTHETIC CARRIER");
+        track.ImoNumber.ShouldBe(7000002u);
+        track.CallSign.ShouldBe("ZZ0006");
         track.ShipType.ShouldBe((ShipType)71);
         track.ShipTypeName.ShouldBe("Cargo - Hazard A (Major)");
         track.NavigationStatus.ShouldBe(NavigationStatus.UnderwayUsingEngine);
@@ -85,7 +85,7 @@ public class MarineCadastreTrackReaderTests
     public void EmptyColumnsBecomeNullOrNotAvailable()
     {
         using GeoPackageBuilder package = new();
-        package.Add(new TrackRow(368110110, Start, End, Miami) { Transceiver = null });
+        package.Add(new TrackRow(999000010, Start, End, Miami) { Transceiver = null });
 
         VesselTrack track = MarineCadastreTrackReader.Read(package.Path).Single();
 
@@ -127,8 +127,21 @@ public class MarineCadastreTrackReaderTests
     }
 
     [TestMethod]
-    [DataRow("IMO9673630", 9673630u)]
-    [DataRow("9673630", 9673630u)]
+    [DataRow(37, 70, 70)]
+    [DataRow(37, null, 37)]
+    [DataRow(null, 152, 0)]
+    public void ShipTypeSourceCanPreferCargo(int? vesselType, int? cargo, int expected)
+    {
+        using GeoPackageBuilder package = new();
+        package.Add(new TrackRow(1, Start, End, Miami) { VesselType = vesselType, Cargo = cargo });
+
+        MarineCadastreTrackReader.Read(package.Path, new VesselTrackReaderOptions { ShipTypeSource = ShipTypeSource.CargoThenVesselType })
+            .Single().ShipType.ShouldBe((ShipType)expected);
+    }
+
+    [TestMethod]
+    [DataRow("IMO7000002", 7000002u)]
+    [DataRow("7000002", 7000002u)]
     [DataRow("imo0000000", null)]
     [DataRow("", null)]
     [DataRow("IMO", null)]

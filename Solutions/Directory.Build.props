@@ -3,7 +3,7 @@
   <!--
     Analysis settings for every project in the solution. Deliberately limited to these: the rest of the
     conventions in Endjin.Conventions.props stay opt-in per project, because turning
-    warnings-as-errors on for the Benchmarks and Specs projects would be a behaviour change unrelated to
+    warnings-as-errors on for the Benchmarks and Tests projects would be a behaviour change unrelated to
     removing the Endjin package.
   -->
 

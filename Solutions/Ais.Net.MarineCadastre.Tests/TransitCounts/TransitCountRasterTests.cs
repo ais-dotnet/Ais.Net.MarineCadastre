@@ -7,7 +7,7 @@ using Ais.Net.Models.Abstractions;
 
 using Shouldly;
 
-namespace Ais.Net.MarineCadastre.Specs;
+namespace Ais.Net.MarineCadastre.Tests.TransitCounts;
 
 [TestClass]
 public class TransitCountRasterTests

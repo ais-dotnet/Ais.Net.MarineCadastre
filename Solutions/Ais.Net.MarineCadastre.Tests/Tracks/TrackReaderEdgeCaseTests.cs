@@ -6,7 +6,7 @@ using Ais.Net.Models.Abstractions;
 
 using Shouldly;
 
-namespace Ais.Net.MarineCadastre.Specs;
+namespace Ais.Net.MarineCadastre.Tests.Tracks;
 
 /// <summary>
 /// Malformed registries, missing or absurd column values, string reuse, and the geometry encodings the
@@ -134,8 +134,8 @@ public class TrackReaderEdgeCaseTests
         using GeoPackageBuilder package = new();
         package.Add(new TrackRow(1, Start, End, Miami) { VesselName = "TURN TWO", CallSign = "ODYSSEY", VesselTypeName = "Pleasure Craft" });
         package.Add(new TrackRow(1, Start.AddHours(1), End.AddHours(1), Miami) { VesselName = "TURN TWO", CallSign = "ODYSSEY", VesselTypeName = "Pleasure Craft" });
-        package.Add(new TrackRow(2, Start, End, Miami) { VesselName = longName, CallSign = "WDL7894", VesselTypeName = "Tug" });
-        package.Add(new TrackRow(2, Start.AddHours(1), End.AddHours(1), Miami) { VesselName = longName, CallSign = "WDL7894", VesselTypeName = "Tug" });
+        package.Add(new TrackRow(2, Start, End, Miami) { VesselName = longName, CallSign = "ZZZ0003", VesselTypeName = "Tug" });
+        package.Add(new TrackRow(2, Start.AddHours(1), End.AddHours(1), Miami) { VesselName = longName, CallSign = "ZZZ0003", VesselTypeName = "Tug" });
 
         List<VesselTrack> tracks = [.. MarineCadastreTrackReader.Read(package.Path)];
 
@@ -148,10 +148,54 @@ public class TrackReaderEdgeCaseTests
     }
 
     [TestMethod]
-    public void ABoundingBoxNeedsAtLeastOnePosition()
+    public void AGeometryWithACoordinateOutsideWgs84IsReported()
     {
-        Should.Throw<ArgumentException>(() => BoundingBox.FromPositions([]));
-        BoundingBox.FromPositions([new Position(1, 2)]).ShouldBe(new BoundingBox(2, 1, 2, 1));
+        byte[] blob = GeoPackageGeometry.Encode([[new Position(91, 0), new Position(0, 0)]]);
+
+        Should.Throw<InvalidDataException>(() => GeoPackageGeometry.DecodeLine(blob, out _)).Message.ShouldContain("WGS84");
+
+        // No points on the row itself, so the builder does not try to index the bad geometry.
+        using GeoPackageBuilder package = new();
+        package.Add(new TrackRow(1, Start, End, []) { Geometry = blob });
+        Should.Throw<InvalidDataException>(() => MarineCadastreTrackReader.Read(package.Path).ToList());
+    }
+
+    [TestMethod]
+    public void PointsCannotBeCastBackToAnArray()
+    {
+        using GeoPackageBuilder package = new();
+        package.Add(new TrackRow(1, Start, End, Miami));
+
+        IReadOnlyList<Position> points = MarineCadastreTrackReader.Read(package.Path).Single().Points;
+
+        (points as Position[]).ShouldBeNull();
+        (points as IList<Position>).ShouldBeNull();
+        (points as ICollection<Position>).ShouldBeNull();
+        points.Count.ShouldBe(Miami.Length);
+        points[0].ShouldBe(Miami[0]);
+        points[1].ShouldBe(Miami[1]);
+        List<Position> enumerated = [];
+        foreach (Position point in points)
+        {
+            enumerated.Add(point);
+        }
+
+        enumerated.ShouldBe(Miami);
+        Should.Throw<ArgumentOutOfRangeException>(() => points[2]);
+        Should.Throw<ArgumentOutOfRangeException>(() => points[-1]);
+    }
+
+    [TestMethod]
+    public void VesselTrackRequiresPoints()
+    {
+        Should.Throw<ArgumentNullException>(() => new VesselTrack(1, 2, Start, End, null!)).ParamName.ShouldBe("Points");
+
+        VesselTrack track = new(1, 2, Start, End, Miami);
+        Should.Throw<ArgumentNullException>(() => track with { Points = null! }).ParamName.ShouldBe("Points");
+
+        VesselTrack renamed = track with { VesselName = "X" };
+        renamed.VesselName.ShouldBe("X");
+        renamed.Points.ShouldBeSameAs(track.Points);
     }
 
     [TestMethod]

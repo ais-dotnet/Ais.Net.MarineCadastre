@@ -31,6 +31,7 @@ namespace Ais.Net.MarineCadastre.Tracks;
 /// <param name="StartTime">The time of the first position, as UTC.</param>
 /// <param name="EndTime">The time of the last position, as UTC.</param>
 /// <param name="Points">The positions along the track, in time order.</param>
+/// <exception cref="ArgumentNullException">Thrown when <paramref name="Points"/> is <see langword="null"/>.</exception>
 public sealed record VesselTrack(
     long Id,
     uint Mmsi,
@@ -39,6 +40,17 @@ public sealed record VesselTrack(
     IReadOnlyList<Position> Points)
     : IVesselIdentity, IVesselName, ICallSign, IShipType, IVesselNavigationStatus
 {
+    /// <summary>
+    /// Gets the positions along the track, in time order.
+    /// </summary>
+    /// <remarks>
+    /// Tracks from <see cref="MarineCadastreTrackReader"/> hold a read-only list that cannot be cast
+    /// back to an array or other mutable collection.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">Thrown when set to <see langword="null"/>.</exception>
+    public IReadOnlyList<Position> Points { get; init => field = value ?? throw new ArgumentNullException(nameof(this.Points)); }
+        = Points ?? throw new ArgumentNullException(nameof(Points));
+
     /// <summary>
     /// Gets the length of the track in time: the file's <c>duration_minutes</c> when present, otherwise
     /// <see cref="EndTime"/> less <see cref="StartTime"/>.

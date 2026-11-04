@@ -7,18 +7,6 @@ using Ais.Net.Models.Abstractions;
 namespace Ais.Net.MarineCadastre.GeoTiff;
 
 /// <summary>
-/// The coordinate reference systems a transit-count raster may use.
-/// </summary>
-internal enum RasterProjection
-{
-    /// <summary>Longitude and latitude in degrees (EPSG:4326 and relatives).</summary>
-    Geographic,
-
-    /// <summary>WGS 84 / Pseudo-Mercator, EPSG:3857, in metres on the sphere.</summary>
-    WebMercator,
-}
-
-/// <summary>
 /// Maps between raster cells, model coordinates and geographic positions for a north-up raster with
 /// square-ish cells and no rotation, which is the only kind GeoTIFF tiepoint-and-scale georeferencing
 /// describes.
@@ -94,6 +82,13 @@ internal sealed record RasterGeoreference(RasterProjection Projection, double Or
         double south = this.OriginY - ((firstRow + rows) * cellHeight);
         Position southWest = this.ToPosition(west, south);
         Position northEast = this.ToPosition(east, north);
-        return new BoundingBox(southWest.Longitude, southWest.Latitude, northEast.Longitude, northEast.Latitude);
+
+        // Web Mercator rounding can land a world-wide raster's edges a fraction outside the WGS84
+        // range, which BoundingBox rejects.
+        return new BoundingBox(
+            Math.Clamp(southWest.Longitude, -180, 180),
+            Math.Clamp(southWest.Latitude, -90, 90),
+            Math.Clamp(northEast.Longitude, -180, 180),
+            Math.Clamp(northEast.Latitude, -90, 90));
     }
 }

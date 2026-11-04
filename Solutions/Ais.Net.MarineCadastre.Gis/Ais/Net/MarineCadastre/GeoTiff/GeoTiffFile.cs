@@ -13,38 +13,6 @@ using Microsoft.Win32.SafeHandles;
 namespace Ais.Net.MarineCadastre.GeoTiff;
 
 /// <summary>
-/// One resolution level of a GeoTIFF: the full image or one of its overviews, in tiles or strips.
-/// </summary>
-internal sealed class RasterLevel
-{
-    public required int Width { get; init; }
-
-    public required int Height { get; init; }
-
-    public required int BlockWidth { get; init; }
-
-    public required int BlockHeight { get; init; }
-
-    public required bool Tiled { get; init; }
-
-    public required int Compression { get; init; }
-
-    public required int Predictor { get; init; }
-
-    public required int BitsPerSample { get; init; }
-
-    public required int SampleFormat { get; init; }
-
-    public required long[] BlockOffsets { get; init; }
-
-    public required long[] BlockByteCounts { get; init; }
-
-    public int BlocksAcross => (this.Width + this.BlockWidth - 1) / this.BlockWidth;
-
-    public int BlocksDown => (this.Height + this.BlockHeight - 1) / this.BlockHeight;
-}
-
-/// <summary>
 /// Reads the parts of a GeoTIFF a transit-count raster needs: the image directories (classic and
 /// BigTIFF), tiepoint-and-scale georeferencing with a recognised coordinate system, GDAL's NoData and
 /// statistics, and individual tiles or strips decoded from LZW, Deflate or no compression.
@@ -517,6 +485,11 @@ internal sealed class GeoTiffFile : IDisposable
             // PixelIsPoint: the tiepoint names the centre of the first cell, not its corner.
             originX -= cellWidth / 2;
             originY += cellHeight / 2;
+        }
+
+        if (!double.IsFinite(originX) || !double.IsFinite(originY) || !double.IsFinite(cellWidth) || !double.IsFinite(cellHeight))
+        {
+            throw new InvalidDataException("The GeoTIFF georeferencing has a value that is NaN or infinite.");
         }
 
         return new RasterGeoreference(projection, originX, originY, cellWidth, cellHeight);

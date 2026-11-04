@@ -4,8 +4,6 @@
 
 using System.Reactive.Linq;
 
-using Ais.Net.MarineCadastre.GeoPackage;
-
 using Microsoft.Data.Sqlite;
 
 namespace Ais.Net.MarineCadastre.Tracks;
@@ -74,8 +72,8 @@ public static class MarineCadastreTrackReader
             throw new FileNotFoundException("The GeoPackage file was not found.", path);
         }
 
-        using SqliteConnection connection = TrackTable.Open(path);
-        TrackTable table = TrackTable.Discover(connection, options.TableName);
+        using SqliteConnection connection = VesselTrackTable.Open(path);
+        VesselTrackTable table = VesselTrackTable.Discover(connection, options.TableName);
         foreach (VesselTrack track in table.Read(connection, options, cancellationToken))
         {
             yield return track;

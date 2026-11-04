@@ -30,7 +30,7 @@ namespace Ais.Net.MarineCadastre.Csv;
 /// destination and so on) are set to the AIS "not available" value for that field.
 /// </para>
 /// </remarks>
-internal sealed class MarineCadastreCsvParser(MarineCadastreReaderOptions options)
+internal sealed class MarineCadastreCsvParser(MarineCadastreCsvReaderOptions options)
 {
     /// <summary>The most fields a record is expected to have; extra columns are ignored.</summary>
     internal const int MaxFields = 32;
@@ -49,6 +49,9 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreReaderOptions option
     private Columns columns;
     private bool headerParsed;
 
+    // The 1-based physical line number of the line being parsed; the header is line 1.
+    private long lineNumber;
+
     // A daily file has one date on every row, so the date part is validated and converted to ticks
     // once and each row only adds its time of day.
     private int cachedDateKey = -1;
@@ -66,6 +69,7 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreReaderOptions option
     /// </summary>
     public void ParseLine(Span<byte> line, out AisMessageBase? position, out AisMessageBase? staticData)
     {
+        this.lineNumber++;
         position = null;
         staticData = null;
 
@@ -85,9 +89,10 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreReaderOptions option
             return;
         }
 
-        if (!this.TryParseRow(line, fields, fieldCount, out Row row))
+        if (!this.TryParseRow(line, fields, fieldCount, out Row row, out CsvRowSkipReason reason))
         {
             this.SkippedRowCount++;
+            options.OnRowSkipped?.Invoke(new SkippedCsvRow(this.lineNumber, reason, line));
             return;
         }
 
@@ -328,19 +333,28 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreReaderOptions option
         }
     }
 
-    private bool TryParseRow(ReadOnlySpan<byte> line, ReadOnlySpan<CsvField> fields, int fieldCount, out Row row)
+    private bool TryParseRow(ReadOnlySpan<byte> line, ReadOnlySpan<CsvField> fields, int fieldCount, out Row row, out CsvRowSkipReason reason)
     {
         row = default;
         if (fieldCount <= this.columns.Highest)
         {
+            reason = CsvRowSkipReason.TooFewFields;
             return false;
         }
 
-        if (!Utf8Parser.TryParse(fields[this.columns.Mmsi].In(line), out uint mmsi, out _)
-            || !this.TryParseTimestamp(fields[this.columns.BaseDateTime].In(line), out DateTimeOffset timestamp))
+        if (!Utf8Parser.TryParse(fields[this.columns.Mmsi].In(line), out uint mmsi, out _))
         {
+            reason = CsvRowSkipReason.InvalidMmsi;
             return false;
         }
+
+        if (!this.TryParseTimestamp(fields[this.columns.BaseDateTime].In(line), out DateTimeOffset timestamp))
+        {
+            reason = CsvRowSkipReason.InvalidTimestamp;
+            return false;
+        }
+
+        reason = default;
 
         Position? position = null;
         if (TryParseDouble(fields[this.columns.Latitude].In(line), out double latitude)
