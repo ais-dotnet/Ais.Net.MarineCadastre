@@ -1,10 +1,8 @@
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
-
-using Ais.Net.MarineCadastre.TransitCounts;
 using Ais.Net.MarineCadastre.TestSupport;
+using Ais.Net.MarineCadastre.TransitCounts;
 using Ais.Net.Models.Abstractions;
-
 using Shouldly;
 
 namespace Ais.Net.MarineCadastre.Tests.TransitCounts;

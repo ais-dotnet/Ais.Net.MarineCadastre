@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "dependencies": {
+    "net10.0": {
+      "Ais.Net.Models": {
+        "type": "Direct",
+        "requested": "[1.1.0, )",
+        "resolved": "1.1.0",
+        "contentHash": "APkv0UIFXhiaFlV48Dzo+LLnS5pYSBnxRebG7xxhBnQcqKNkE1PtldnoOuZyUbUWvaoXXaCQ3o7TtS9VdJzcPA==",
+        "dependencies": {
+          "Ais.Net": "0.4.2"
+        }
+      },
+      "Microsoft.CodeAnalysis.PublicApiAnalyzers": {
+        "type": "Direct",
+        "requested": "[5.6.0, )",
+        "resolved": "5.6.0",
+        "contentHash": "W4kJGezNIKLzo0Ak5FAQDFvkMf2U7DtGL4THmHyRSApfKsKt5V+eX/bU0ZLKAt/uf9Bb2o1bi0YDKj/GRB/vYQ=="
+      },
+      "Ais.Net": {
+        "type": "Transitive",
+        "resolved": "0.4.2",
+        "contentHash": "+wtx8g0YwxEaDbilf4MiED9S4Yxr9J7RHAAMEN48+yB0it10KYdhmtB6dxt7qdCOvdoDnBOumggcGYefWMz+WA=="
+      }
+    }
+  }
+}

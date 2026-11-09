@@ -8,7 +8,7 @@ using Shouldly;
 namespace Ais.Net.MarineCadastre.Tests.Csv;
 
 /// <summary>
-/// The file overloads, the ends of files, blank and malformed lines: the paths the main reader specs
+/// The file overloads, the ends of files, blank and malformed lines: the paths the main reader tests
 /// do not reach.
 /// </summary>
 [TestClass]

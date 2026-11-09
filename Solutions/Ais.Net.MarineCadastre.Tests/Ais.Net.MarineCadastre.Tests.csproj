@@ -11,11 +11,6 @@
     <NoWarn>CS1591</NoWarn>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-    <RestoreLockedMode Condition="$(ContinuousIntegrationBuild) == 'true'">true</RestoreLockedMode>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Shouldly" />
   </ItemGroup>

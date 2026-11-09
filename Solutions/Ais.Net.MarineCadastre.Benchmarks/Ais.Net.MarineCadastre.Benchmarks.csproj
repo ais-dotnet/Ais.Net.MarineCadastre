@@ -29,6 +29,7 @@
   <ItemGroup>
     <!-- The GeoPackage and GeoTIFF fixture builders are shared with the Tests project rather than duplicated. -->
     <Compile Include="..\Ais.Net.MarineCadastre.Tests\TestSupport\GeoPackageBuilder.cs" Link="TestSupport\GeoPackageBuilder.cs" />
+    <Compile Include="..\Ais.Net.MarineCadastre.Tests\TestSupport\GeoPackageGeometryEncoder.cs" Link="TestSupport\GeoPackageGeometryEncoder.cs" />
     <Compile Include="..\Ais.Net.MarineCadastre.Tests\TestSupport\GeoTiffBuilder.cs" Link="TestSupport\GeoTiffBuilder.cs" />
   </ItemGroup>
 

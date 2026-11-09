@@ -13,7 +13,7 @@
   <PropertyGroup>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageDescription>Reads the archived AIS vessel-traffic CSV files published by MarineCadastre.gov (NOAA / BOEM) and converts each row into Ais.Net.Models message types, so the same code that consumes a live Ais.Net.Receiver stream can run over years of archived US coastal traffic. Sponsored by endjin.</PackageDescription>
-    <PackageTags>ais;marinecadastre;noaa;csv;marine;gis;endjin</PackageTags>
+    <PackageTags>ais;marinecadastre;noaa;csv;marine;endjin</PackageTags>
     <PackageReleaseNotes>
       Initial release: streaming reader from MarineCadastre CSV to Ais.Net.Models messages, with static-data de-duplication per vessel.
     </PackageReleaseNotes>

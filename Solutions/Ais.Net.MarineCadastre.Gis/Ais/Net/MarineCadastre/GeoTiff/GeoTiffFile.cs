@@ -161,17 +161,17 @@ internal sealed class GeoTiffFile : IDisposable
 
                 case CompressionDeflate:
                 case CompressionDeflateLegacy:
-                {
-                    using ZLibStream inflater = new(new ReadOnlyMemoryStream(compressed.ToArray()), CompressionMode.Decompress);
-                    decoded = 0;
-                    int read;
-                    while (decoded < rawLength && (read = inflater.Read(rawSpan[decoded..])) > 0)
                     {
-                        decoded += read;
-                    }
+                        using ZLibStream inflater = new(new ReadOnlyMemoryStream(compressed.ToArray()), CompressionMode.Decompress);
+                        decoded = 0;
+                        int read;
+                        while (decoded < rawLength && (read = inflater.Read(rawSpan[decoded..])) > 0)
+                        {
+                            decoded += read;
+                        }
 
-                    break;
-                }
+                        break;
+                    }
 
                 default:
                     throw new NotSupportedException($"TIFF compression {level.Compression} is not supported; only none, LZW and Deflate are.");

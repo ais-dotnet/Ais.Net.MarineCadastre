@@ -7,7 +7,7 @@ using Shouldly;
 namespace Ais.Net.MarineCadastre.Tests.GeoTiff;
 
 /// <summary>
-/// GeoTIFF layouts and faults the main raster specs do not reach: matrix georeferencing, sparse
+/// GeoTIFF layouts and faults the main raster tests do not reach: matrix georeferencing, sparse
 /// blocks, unsupported encodings, truncated and malformed files, and metadata that is not statistics.
 /// </summary>
 [TestClass]

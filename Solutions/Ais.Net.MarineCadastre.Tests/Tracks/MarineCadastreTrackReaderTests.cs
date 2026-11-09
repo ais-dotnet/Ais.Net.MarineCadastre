@@ -1,11 +1,8 @@
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
-
-using Ais.Net.MarineCadastre.GeoPackage;
-using Ais.Net.MarineCadastre.Tracks;
 using Ais.Net.MarineCadastre.TestSupport;
+using Ais.Net.MarineCadastre.Tracks;
 using Ais.Net.Models.Abstractions;
-
 using Shouldly;
 
 namespace Ais.Net.MarineCadastre.Tests.Tracks;
@@ -171,7 +168,7 @@ public class MarineCadastreTrackReaderTests
         using GeoPackageBuilder package = new();
         package.Add(new TrackRow(1, Start, End, Miami) { NoGeometry = true });
         package.Add(new TrackRow(2, Start, End, Miami));
-        package.Add(new TrackRow(3, Start, End, Miami) { Geometry = GeoPackageGeometry.Encode([Miami], empty: true) });
+        package.Add(new TrackRow(3, Start, End, Miami) { Geometry = GeoPackageGeometryEncoder.Encode([Miami], empty: true) });
 
         MarineCadastreTrackReader.Read(package.Path).Select(t => t.Mmsi).ShouldBe([2u]);
     }

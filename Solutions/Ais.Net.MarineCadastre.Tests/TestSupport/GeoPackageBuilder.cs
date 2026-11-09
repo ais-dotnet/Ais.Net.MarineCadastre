@@ -1,6 +1,4 @@
 using System.Globalization;
-
-using Ais.Net.MarineCadastre.GeoPackage;
 using Ais.Net.Models.Abstractions;
 
 using Microsoft.Data.Sqlite;
@@ -9,7 +7,7 @@ namespace Ais.Net.MarineCadastre.TestSupport;
 
 /// <summary>
 /// Writes a small GeoPackage with the same shape as a MarineCadastre AIS Vessel Tracks file, in a
-/// temporary location, for specs and benchmarks. Shared between the two projects as a linked file.
+/// temporary location, for tests and benchmarks. Shared between the two projects as a linked file.
 /// </summary>
 public sealed class GeoPackageBuilder : IDisposable
 {
@@ -79,7 +77,7 @@ public sealed class GeoPackageBuilder : IDisposable
             select last_insert_rowid();
             """;
 
-        object shape = row.NoGeometry ? DBNull.Value : row.Geometry ?? GeoPackageGeometry.Encode([row.Points]);
+        object shape = row.NoGeometry ? DBNull.Value : row.Geometry ?? GeoPackageGeometryEncoder.Encode([row.Points]);
         command.Parameters.AddWithValue("@shape", shape);
         command.Parameters.AddWithValue("@mmsi", (long)row.Mmsi);
         command.Parameters.AddWithValue("@vessel_name", (object?)row.VesselName ?? DBNull.Value);

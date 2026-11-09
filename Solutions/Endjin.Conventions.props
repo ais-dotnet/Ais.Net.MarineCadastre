@@ -61,19 +61,22 @@
 
   <PropertyGroup>
     <!--
-      Package icon. The removed package set this and packed the solution-level PackageIcon.png
-      itself; without it the nupkg ships with no icon. The file lives alongside this props file.
+      Package icon and README. Both files are shared by every package the repository produces: the
+      icon lives alongside this props file, and the README is the repository README, which documents
+      both packages. Without PackageReadmeFile the nuget.org page shows only the description.
     -->
     <PackageIcon>PackageIcon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)PackageIcon.png" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
 
   <!--
-    CI detection (ContinuousIntegrationBuild from TF_BUILD / GITHUB_ACTIONS) lives in
-    Directory.Build.props rather than here: this file is opt-in per project, and the test project's
-    RestoreLockedMode depends on that property too, so it must reach every project.
+    CI detection (ContinuousIntegrationBuild from TF_BUILD / GITHUB_ACTIONS) and the lock-file
+    settings live in Directory.Build.props rather than here: this file is opt-in per project, and
+    those settings must reach every project.
   -->
 
   <PropertyGroup>

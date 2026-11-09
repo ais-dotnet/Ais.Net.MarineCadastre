@@ -1,4 +1,5 @@
 using Ais.Net.MarineCadastre.GeoPackage;
+using Ais.Net.MarineCadastre.TestSupport;
 using Ais.Net.Models.Abstractions;
 
 using Shouldly;
@@ -41,7 +42,7 @@ public class GeoPackageGeometryTests
     [DataRow(true, 4)]
     public void DecodesEitherByteOrderAndSkipsAnyEnvelope(bool bigEndian, int envelopeIndicator)
     {
-        byte[] blob = GeoPackageGeometry.Encode([PartA], bigEndian: bigEndian, envelopeIndicator: envelopeIndicator);
+        byte[] blob = GeoPackageGeometryEncoder.Encode([PartA], bigEndian: bigEndian, envelopeIndicator: envelopeIndicator);
 
         GeoPackageGeometry.DecodeLine(blob, out _).ShouldBe(PartA);
     }
@@ -49,7 +50,7 @@ public class GeoPackageGeometryTests
     [TestMethod]
     public void ConcatenatesThePartsOfAMultiLineString()
     {
-        byte[] blob = GeoPackageGeometry.Encode([PartA, PartB]);
+        byte[] blob = GeoPackageGeometryEncoder.Encode([PartA, PartB]);
 
         GeoPackageGeometry.DecodeLine(blob, out BoundingBox envelope).ShouldBe([.. PartA, .. PartB]);
         envelope.ShouldBe(new BoundingBox(-122.39129, 25.79027, -80.18396, 47.631));
@@ -58,7 +59,7 @@ public class GeoPackageGeometryTests
     [TestMethod]
     public void AcceptsAPlainLineString()
     {
-        byte[] blob = GeoPackageGeometry.Encode([PartB], forceMulti: false);
+        byte[] blob = GeoPackageGeometryEncoder.Encode([PartB], forceMulti: false);
 
         GeoPackageGeometry.DecodeLine(blob, out _).ShouldBe(PartB);
     }
@@ -72,7 +73,7 @@ public class GeoPackageGeometryTests
     [DataRow(true, true, true)]
     public void DropsZAndMOrdinatesInIsoAndExtendedEncodings(bool withZ, bool withM, bool extendedFlags)
     {
-        byte[] blob = GeoPackageGeometry.Encode([PartA, PartB], withZ: withZ, withM: withM, extendedFlags: extendedFlags);
+        byte[] blob = GeoPackageGeometryEncoder.Encode([PartA, PartB], withZ: withZ, withM: withM, extendedFlags: extendedFlags);
 
         GeoPackageGeometry.DecodeLine(blob, out _).ShouldBe([.. PartA, .. PartB]);
     }
@@ -80,7 +81,7 @@ public class GeoPackageGeometryTests
     [TestMethod]
     public void EmptyFlagYieldsNoPoints()
     {
-        byte[] blob = GeoPackageGeometry.Encode([PartA], empty: true);
+        byte[] blob = GeoPackageGeometryEncoder.Encode([PartA], empty: true);
 
         GeoPackageGeometry.DecodeLine(blob, out BoundingBox envelope).ShouldBeEmpty();
         envelope.ShouldBe(default);
@@ -89,7 +90,7 @@ public class GeoPackageGeometryTests
     [TestMethod]
     public void MultiLineStringWithNoPartsYieldsNoPoints()
     {
-        GeoPackageGeometry.DecodeLine(GeoPackageGeometry.Encode([]), out _).ShouldBeEmpty();
+        GeoPackageGeometry.DecodeLine(GeoPackageGeometryEncoder.Encode([]), out _).ShouldBeEmpty();
     }
 
     [TestMethod]
@@ -111,7 +112,7 @@ public class GeoPackageGeometryTests
     [TestMethod]
     public void RejectsTruncatedGeometries()
     {
-        byte[] blob = GeoPackageGeometry.Encode([PartB]);
+        byte[] blob = GeoPackageGeometryEncoder.Encode([PartB]);
 
         Should.Throw<InvalidDataException>(() => GeoPackageGeometry.DecodeLine(blob.AsSpan(0, blob.Length - 1), out _));
     }
@@ -119,7 +120,7 @@ public class GeoPackageGeometryTests
     [TestMethod]
     public void RejectsABlobThatEndsInsideItsEnvelope()
     {
-        byte[] blob = GeoPackageGeometry.Encode([PartA], envelopeIndicator: 1);
+        byte[] blob = GeoPackageGeometryEncoder.Encode([PartA], envelopeIndicator: 1);
 
         Should.Throw<InvalidDataException>(() => GeoPackageGeometry.DecodeLine(blob.AsSpan(0, 20), out _))
             .Message.ShouldContain("envelope");
@@ -129,9 +130,9 @@ public class GeoPackageGeometryTests
     public void RejectsPointAndPartCountsThatCannotFit()
     {
         // A LineString whose point count is 0xFFFFFFFF, and a MultiLineString whose part count is 0x80000000.
-        byte[] line = GeoPackageGeometry.Encode([PartA], forceMulti: false);
+        byte[] line = GeoPackageGeometryEncoder.Encode([PartA], forceMulti: false);
         line.AsSpan(13, 4).Fill(0xFF);
-        byte[] multi = GeoPackageGeometry.Encode([PartA]);
+        byte[] multi = GeoPackageGeometryEncoder.Encode([PartA]);
         multi.AsSpan(13, 4).Fill(0);
         multi[16] = 0x80;
 
@@ -142,7 +143,7 @@ public class GeoPackageGeometryTests
     [TestMethod]
     public void RejectsInvalidEnvelopeIndicators()
     {
-        byte[] blob = GeoPackageGeometry.Encode([PartA]);
+        byte[] blob = GeoPackageGeometryEncoder.Encode([PartA]);
         blob[3] = (byte)(blob[3] | (5 << 1));
 
         Should.Throw<InvalidDataException>(() => GeoPackageGeometry.DecodeLine(blob, out _));

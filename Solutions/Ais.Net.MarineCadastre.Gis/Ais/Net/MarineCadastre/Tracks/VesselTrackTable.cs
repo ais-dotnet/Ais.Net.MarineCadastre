@@ -4,13 +4,9 @@
 
 using System.Globalization;
 using System.Text;
-
-using Ais.Net.Models.Abstractions;
-
 using Ais.Net.MarineCadastre.GeoPackage;
-
+using Ais.Net.Models.Abstractions;
 using Microsoft.Data.Sqlite;
-
 using SQLitePCL;
 
 namespace Ais.Net.MarineCadastre.Tracks;
@@ -457,21 +453,21 @@ internal sealed class VesselTrackTable
         switch (raw.sqlite3_column_type(statement, ordinal))
         {
             case raw.SQLITE_TEXT:
-            {
-                ReadOnlySpan<byte> text = raw.sqlite3_column_blob(statement, ordinal);
-                if (TryParseTimestamp(text, out DateTimeOffset parsed))
                 {
-                    return parsed;
-                }
+                    ReadOnlySpan<byte> text = raw.sqlite3_column_blob(statement, ordinal);
+                    if (TryParseTimestamp(text, out DateTimeOffset parsed))
+                    {
+                        return parsed;
+                    }
 
-                string fallback = Encoding.UTF8.GetString(text);
-                if (DateTimeOffset.TryParse(fallback, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out parsed))
-                {
-                    return parsed;
-                }
+                    string fallback = Encoding.UTF8.GetString(text);
+                    if (DateTimeOffset.TryParse(fallback, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out parsed))
+                    {
+                        return parsed;
+                    }
 
-                throw new InvalidDataException($"Row {id} has an unreadable {role}: '{fallback}'.");
-            }
+                    throw new InvalidDataException($"Row {id} has an unreadable {role}: '{fallback}'.");
+                }
 
             case raw.SQLITE_INTEGER:
                 return DateTimeOffset.FromUnixTimeSeconds(raw.sqlite3_column_int64(statement, ordinal));

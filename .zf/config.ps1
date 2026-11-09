@@ -60,6 +60,13 @@ task . FullBuild
 # task keeps the phase (and therefore publish) alive without doing any additional work.
 task NoOp {}
 
+# Formatting is part of the build: the compile phase fails when any file differs from what
+# `dotnet format` would write, so the .editorconfig rules stay enforced without a separate CI step.
+# Run `dotnet format Solutions/Ais.Net.MarineCadastre.slnx` locally to fix a failure.
+task PostBuild {
+    exec { dotnet format $SolutionToBuild --verify-no-changes --no-restore }
+}
+
 
 #
 # Build Process Extensibility Points - uncomment and implement as required
@@ -71,7 +78,6 @@ task NoOp {}
 # task PreVersion {}
 # task PostVersion {}
 # task PreBuild {}
-# task PostBuild {}
 # task PreTest {}
 # task PostTest {}
 # task PreTestReport {}

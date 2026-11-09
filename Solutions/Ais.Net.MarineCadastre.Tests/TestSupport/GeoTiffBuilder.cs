@@ -13,7 +13,7 @@ public enum TiffCompression
 
 /// <summary>
 /// Writes a small GeoTIFF with the shape of a MarineCadastre transit-count raster, in a temporary
-/// file, for specs and benchmarks. Shared between the two projects as a linked file.
+/// file, for tests and benchmarks. Shared between the two projects as a linked file.
 /// </summary>
 public sealed class GeoTiffBuilder : IDisposable
 {

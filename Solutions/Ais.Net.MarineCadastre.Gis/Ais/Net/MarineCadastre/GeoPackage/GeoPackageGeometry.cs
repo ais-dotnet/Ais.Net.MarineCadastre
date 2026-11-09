@@ -2,7 +2,6 @@
 // Copyright (c) Endjin Limited. All rights reserved.
 // </copyright>
 
-using System.Buffers;
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 
@@ -11,9 +10,8 @@ using Ais.Net.Models.Abstractions;
 namespace Ais.Net.MarineCadastre.GeoPackage;
 
 /// <summary>
-/// Decodes (and, for tests, encodes) the GeoPackage binary geometry format: an 8-byte header, an
-/// optional envelope, then ISO well-known binary. Only line geometries are handled, since that is all
-/// a tracks file contains.
+/// Decodes the GeoPackage binary geometry format: an 8-byte header, an optional envelope, then ISO
+/// well-known binary. It handles only line geometries, because a tracks file contains nothing else.
 /// </summary>
 internal static class GeoPackageGeometry
 {
@@ -27,13 +25,13 @@ internal static class GeoPackageGeometry
     private const uint ExtendedSridFlag = 0x20000000;
 
     /// <summary>
-    /// Decodes a LineString or MultiLineString into positions. Parts of a MultiLineString are
-    /// concatenated in order; Z and M ordinates are dropped.
+    /// Decodes a LineString or MultiLineString into positions. The decoder concatenates the parts of a
+    /// MultiLineString in order and drops the Z and M ordinates.
     /// </summary>
     /// <param name="blob">The geometry column value.</param>
-    /// <param name="envelope">The smallest box enclosing the positions; default when there are none.</param>
+    /// <param name="envelope">The smallest box that contains the positions, or default if there are none.</param>
     /// <returns>The positions, in storage order.</returns>
-    /// <exception cref="InvalidDataException">Thrown when the blob is not a GeoPackage line geometry.</exception>
+    /// <exception cref="InvalidDataException">This exception occurs if the blob is not a GeoPackage line geometry.</exception>
     public static Position[] DecodeLine(ReadOnlySpan<byte> blob, out BoundingBox envelope)
     {
         if (blob.Length < HeaderLength || blob[0] != (byte)'G' || blob[1] != (byte)'P')
@@ -92,90 +90,6 @@ internal static class GeoPackageGeometry
         return points;
     }
 
-    /// <summary>
-    /// Encodes line parts as a GeoPackage geometry. Used by specs and benchmarks to build fixtures.
-    /// </summary>
-    /// <param name="parts">The line parts; one part is written as a LineString unless <paramref name="forceMulti"/>.</param>
-    /// <param name="srsId">The spatial reference system id for the header.</param>
-    /// <param name="bigEndian">Whether to write the header and WKB big-endian.</param>
-    /// <param name="envelopeIndicator">The envelope indicator (0 to 4) for the header; the envelope is filled from the parts.</param>
-    /// <param name="forceMulti">Whether to write a MultiLineString even for one part.</param>
-    /// <param name="withZ">Whether to add a Z ordinate (written as zero).</param>
-    /// <param name="withM">Whether to add an M ordinate (written as zero).</param>
-    /// <param name="extendedFlags">Whether to signal Z and M with PostGIS-style flags rather than ISO type offsets.</param>
-    /// <param name="empty">Whether to set the empty flag; the WKB is still written.</param>
-    /// <returns>The encoded geometry.</returns>
-    public static byte[] Encode(
-        IReadOnlyList<IReadOnlyList<Position>> parts,
-        int srsId = 4326,
-        bool bigEndian = false,
-        int envelopeIndicator = 0,
-        bool forceMulti = true,
-        bool withZ = false,
-        bool withM = false,
-        bool extendedFlags = false,
-        bool empty = false)
-    {
-        ArgumentNullException.ThrowIfNull(parts);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(envelopeIndicator, 4);
-
-        ArrayBufferWriter<byte> output = new();
-        byte flags = (byte)((bigEndian ? 0 : 1) | (envelopeIndicator << 1) | (empty ? 0x10 : 0));
-        WriteByte(output, (byte)'G');
-        WriteByte(output, (byte)'P');
-        WriteByte(output, 0);
-        WriteByte(output, flags);
-        WriteInt32(output, srsId, bigEndian);
-
-        if (envelopeIndicator > 0)
-        {
-            Position[] all = [.. parts.SelectMany(p => p)];
-            BoundingBox box = all.Length == 0 ? default : BoundingBox.FromPositions(all);
-            WriteDouble(output, box.West, bigEndian);
-            WriteDouble(output, box.East, bigEndian);
-            WriteDouble(output, box.South, bigEndian);
-            WriteDouble(output, box.North, bigEndian);
-            int extraPairs = envelopeIndicator switch { 2 or 3 => 1, 4 => 2, _ => 0 };
-            for (int i = 0; i < extraPairs * 2; i++)
-            {
-                WriteDouble(output, 0, bigEndian);
-            }
-        }
-
-        uint typeOffset = extendedFlags ? 0 : (uint)((withZ ? 1000 : 0) + (withM ? 2000 : 0));
-        uint typeFlags = extendedFlags ? (withZ ? ExtendedZFlag : 0) | (withM ? ExtendedMFlag : 0) : 0;
-
-        if (forceMulti || parts.Count != 1)
-        {
-            WriteByte(output, (byte)(bigEndian ? 0 : 1));
-            WriteUInt32(output, (MultiLineStringType + typeOffset) | typeFlags, bigEndian);
-            WriteUInt32(output, (uint)parts.Count, bigEndian);
-        }
-
-        foreach (IReadOnlyList<Position> part in parts)
-        {
-            WriteByte(output, (byte)(bigEndian ? 0 : 1));
-            WriteUInt32(output, (LineStringType + typeOffset) | typeFlags, bigEndian);
-            WriteUInt32(output, (uint)part.Count, bigEndian);
-            foreach (Position position in part)
-            {
-                WriteDouble(output, position.Longitude, bigEndian);
-                WriteDouble(output, position.Latitude, bigEndian);
-                if (withZ)
-                {
-                    WriteDouble(output, 0, bigEndian);
-                }
-
-                if (withM)
-                {
-                    WriteDouble(output, 0, bigEndian);
-                }
-            }
-        }
-
-        return output.WrittenSpan.ToArray();
-    }
-
     private static void Walk(ReadOnlySpan<byte> wkb, ref int offset, Span<Position> target, ref int written, bool countOnly)
     {
         Require(wkb, offset, 5);
@@ -201,58 +115,58 @@ internal static class GeoPackageGeometry
         switch (baseType)
         {
             case LineStringType:
-            {
-                Require(wkb, offset, 4);
-                int count = ReadCount(wkb, offset, littleEndian);
-                offset += 4;
-                Require(wkb, offset, (long)count * stride);
-                if (countOnly)
                 {
-                    offset += count * stride;
-                    written += count;
-                    break;
-                }
-
-                if (littleEndian == BitConverter.IsLittleEndian)
-                {
-                    // The file's byte order is the machine's, which is always so in practice: read the
-                    // ordinates as doubles directly, with one bounds check per span rather than per value.
-                    ReadOnlySpan<double> ordinates = MemoryMarshal.Cast<byte, double>(wkb.Slice(offset, count * stride));
-                    int doublesPerPoint = stride / sizeof(double);
-                    Span<Position> destination = target.Slice(written, count);
-                    for (int i = 0, ordinate = 0; i < count; i++, ordinate += doublesPerPoint)
+                    Require(wkb, offset, 4);
+                    int count = ReadCount(wkb, offset, littleEndian);
+                    offset += 4;
+                    Require(wkb, offset, (long)count * stride);
+                    if (countOnly)
                     {
-                        destination[i] = new Position(ordinates[ordinate + 1], ordinates[ordinate]);
+                        offset += count * stride;
+                        written += count;
+                        break;
                     }
 
-                    written += count;
-                    offset += count * stride;
+                    if (littleEndian == BitConverter.IsLittleEndian)
+                    {
+                        // The file's byte order is the machine's, which is always so in practice: read the
+                        // ordinates as doubles directly, with one bounds check per span rather than per value.
+                        ReadOnlySpan<double> ordinates = MemoryMarshal.Cast<byte, double>(wkb.Slice(offset, count * stride));
+                        int doublesPerPoint = stride / sizeof(double);
+                        Span<Position> destination = target.Slice(written, count);
+                        for (int i = 0, ordinate = 0; i < count; i++, ordinate += doublesPerPoint)
+                        {
+                            destination[i] = new Position(ordinates[ordinate + 1], ordinates[ordinate]);
+                        }
+
+                        written += count;
+                        offset += count * stride;
+                        break;
+                    }
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        double longitude = ReadDouble(wkb, offset, littleEndian);
+                        double latitude = ReadDouble(wkb, offset + sizeof(double), littleEndian);
+                        target[written++] = new Position(latitude, longitude);
+                        offset += stride;
+                    }
+
                     break;
                 }
 
-                for (int i = 0; i < count; i++)
-                {
-                    double longitude = ReadDouble(wkb, offset, littleEndian);
-                    double latitude = ReadDouble(wkb, offset + sizeof(double), littleEndian);
-                    target[written++] = new Position(latitude, longitude);
-                    offset += stride;
-                }
-
-                break;
-            }
-
             case MultiLineStringType:
-            {
-                Require(wkb, offset, 4);
-                int parts = ReadCount(wkb, offset, littleEndian);
-                offset += 4;
-                for (int i = 0; i < parts; i++)
                 {
-                    Walk(wkb, ref offset, target, ref written, countOnly);
-                }
+                    Require(wkb, offset, 4);
+                    int parts = ReadCount(wkb, offset, littleEndian);
+                    offset += 4;
+                    for (int i = 0; i < parts; i++)
+                    {
+                        Walk(wkb, ref offset, target, ref written, countOnly);
+                    }
 
-                break;
-            }
+                    break;
+                }
 
             default:
                 throw new InvalidDataException($"Expected a LineString or MultiLineString geometry but found WKB type {type}.");
@@ -289,43 +203,4 @@ internal static class GeoPackageGeometry
         littleEndian
             ? BinaryPrimitives.ReadDoubleLittleEndian(bytes[offset..])
             : BinaryPrimitives.ReadDoubleBigEndian(bytes[offset..]);
-
-    private static void WriteByte(ArrayBufferWriter<byte> output, byte value)
-    {
-        output.GetSpan(1)[0] = value;
-        output.Advance(1);
-    }
-
-    private static void WriteInt32(ArrayBufferWriter<byte> output, int value, bool bigEndian)
-    {
-        Span<byte> span = output.GetSpan(sizeof(int));
-        if (bigEndian)
-        {
-            BinaryPrimitives.WriteInt32BigEndian(span, value);
-        }
-        else
-        {
-            BinaryPrimitives.WriteInt32LittleEndian(span, value);
-        }
-
-        output.Advance(sizeof(int));
-    }
-
-    private static void WriteUInt32(ArrayBufferWriter<byte> output, uint value, bool bigEndian) =>
-        WriteInt32(output, unchecked((int)value), bigEndian);
-
-    private static void WriteDouble(ArrayBufferWriter<byte> output, double value, bool bigEndian)
-    {
-        Span<byte> span = output.GetSpan(sizeof(double));
-        if (bigEndian)
-        {
-            BinaryPrimitives.WriteDoubleBigEndian(span, value);
-        }
-        else
-        {
-            BinaryPrimitives.WriteDoubleLittleEndian(span, value);
-        }
-
-        output.Advance(sizeof(double));
-    }
 }

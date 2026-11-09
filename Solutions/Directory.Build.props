@@ -29,15 +29,24 @@
   <PropertyGroup>
     <!--
       Marks the build as CI so the compiler normalises embedded paths, which is what makes a
-      deterministic build reproducible, and so the test project's RestoreLockedMode engages and CI
-      restores against packages.lock.json rather than silently resolving afresh. Lives here, not in
-      the opt-in Endjin.Conventions.props, because that file reaches only the published library. The
-      Endjin package only checked TF_BUILD (Azure Pipelines); this repo builds on GitHub Actions, so
-      both are honoured. An explicit -p:ContinuousIntegrationBuild=true still wins, because these
-      only apply when it has not already been set.
+      deterministic build reproducible, and so RestoreLockedMode engages and CI restores against
+      packages.lock.json rather than silently resolving afresh. Lives here, not in the opt-in
+      Endjin.Conventions.props, because that file reaches only the published libraries. Both Azure
+      Pipelines (TF_BUILD) and GitHub Actions are honoured. An explicit -p:ContinuousIntegrationBuild=true
+      still wins, because these only apply when it has not already been set.
     -->
     <ContinuousIntegrationBuild Condition="'$(ContinuousIntegrationBuild)' == '' and '$(TF_BUILD)' == 'true'">true</ContinuousIntegrationBuild>
     <ContinuousIntegrationBuild Condition="'$(ContinuousIntegrationBuild)' == '' and '$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!--
+      Every project keeps a packages.lock.json so that the transitive dependency graph of the shipped
+      packages, as well as of the tests and benchmarks, is recorded in the repository. CI restores in
+      locked mode and fails if the graph drifts; a local restore updates the lock file instead.
+    -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</RestoreLockedMode>
   </PropertyGroup>
 
 </Project>

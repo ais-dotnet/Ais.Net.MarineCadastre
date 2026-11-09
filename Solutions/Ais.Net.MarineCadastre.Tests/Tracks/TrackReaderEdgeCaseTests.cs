@@ -10,7 +10,7 @@ namespace Ais.Net.MarineCadastre.Tests.Tracks;
 
 /// <summary>
 /// Malformed registries, missing or absurd column values, string reuse, and the geometry encodings the
-/// main track specs do not reach.
+/// main track tests do not reach.
 /// </summary>
 [TestClass]
 public class TrackReaderEdgeCaseTests
@@ -150,7 +150,7 @@ public class TrackReaderEdgeCaseTests
     [TestMethod]
     public void AGeometryWithACoordinateOutsideWgs84IsReported()
     {
-        byte[] blob = GeoPackageGeometry.Encode([[new Position(91, 0), new Position(0, 0)]]);
+        byte[] blob = GeoPackageGeometryEncoder.Encode([[new Position(91, 0), new Position(0, 0)]]);
 
         Should.Throw<InvalidDataException>(() => GeoPackageGeometry.DecodeLine(blob, out _)).Message.ShouldContain("WGS84");
 
@@ -201,7 +201,7 @@ public class TrackReaderEdgeCaseTests
     [TestMethod]
     public void ExtendedGeoPackageGeometriesAreRejected()
     {
-        byte[] blob = GeoPackageGeometry.Encode([Miami]);
+        byte[] blob = GeoPackageGeometryEncoder.Encode([Miami]);
         blob[3] |= 0x20;
 
         Should.Throw<InvalidDataException>(() => GeoPackageGeometry.DecodeLine(blob, out _)).Message.ShouldContain("Extended");
@@ -215,7 +215,7 @@ public class TrackReaderEdgeCaseTests
     public void PostGisStyleSridFlagsAreSkipped()
     {
         // A LineString with the EWKB SRID flag set and a four-byte SRID after the type word.
-        byte[] plain = GeoPackageGeometry.Encode([Miami], forceMulti: false);
+        byte[] plain = GeoPackageGeometryEncoder.Encode([Miami], forceMulti: false);
         List<byte> ewkb = [.. plain[..8], plain[8]];
         uint type = BitConverter.ToUInt32(plain, 9) | 0x20000000;
         ewkb.AddRange(BitConverter.GetBytes(type));

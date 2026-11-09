@@ -1,14 +1,10 @@
 using System.Reactive.Linq;
-
 using Ais.Net.MarineCadastre.GeoPackage;
-using Ais.Net.MarineCadastre.Tracks;
 using Ais.Net.MarineCadastre.TestSupport;
+using Ais.Net.MarineCadastre.Tracks;
 using Ais.Net.Models.Abstractions;
-
 using BenchmarkDotNet.Attributes;
-
 using Microsoft.Data.Sqlite;
-
 using SQLitePCL;
 
 namespace Ais.Net.MarineCadastre.Benchmarks;

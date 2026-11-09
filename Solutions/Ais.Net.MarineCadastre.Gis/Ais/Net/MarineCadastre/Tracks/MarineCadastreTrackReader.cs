@@ -25,6 +25,11 @@ namespace Ais.Net.MarineCadastre.Tracks;
 /// filters become <c>where</c> clauses. The reader also applies each filter to the decoded row. Thus
 /// the result is the same with or without the index.
 /// </para>
+/// <para>
+/// A row whose geometry is <see langword="null"/> or has no positions is not a track. The reader skips
+/// it without a report. A row with a coordinate that is NaN or outside the WGS84 range, or with no
+/// MMSI or time, causes an <see cref="InvalidDataException"/>.
+/// </para>
 /// </remarks>
 public static class MarineCadastreTrackReader
 {

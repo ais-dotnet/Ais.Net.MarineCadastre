@@ -80,9 +80,13 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreCsvReaderOptions opt
         Span<CsvField> fields = stackalloc CsvField[MaxFields];
         int fieldCount = CsvLine.Split(line, fields);
 
+        // From here on, fields holds only the fields the line has, so a column index past the end of a
+        // short row is out of range rather than a stale or zeroed slot.
+        fields = fields[..Math.Min(fieldCount, MaxFields)];
+
         if (!this.headerParsed)
         {
-            this.columns = Columns.FromHeader(line, fields[..Math.Min(fieldCount, MaxFields)]);
+            this.columns = Columns.FromHeader(line, fields);
             this.headerParsed = true;
             return;
         }
@@ -102,7 +106,7 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreCsvReaderOptions opt
 
         this.RowCount++;
 
-        bool emitStatic = options.EmitStaticData && this.IsNewStaticData(line, fields, fieldCount, row.Mmsi);
+        bool emitStatic = options.EmitStaticData && this.IsNewStaticData(line, fields, row.Mmsi);
 
         if (row.IsClassB)
         {
@@ -391,7 +395,7 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreCsvReaderOptions opt
     /// Hashes the static columns of the row and compares the hash with the last value for the MMSI.
     /// Thus the parser returns the static data of a vessel one time, not on each of its position rows.
     /// </summary>
-    private bool IsNewStaticData(ReadOnlySpan<byte> line, ReadOnlySpan<CsvField> fields, int fieldCount, uint mmsi)
+    private bool IsNewStaticData(ReadOnlySpan<byte> line, ReadOnlySpan<CsvField> fields, uint mmsi)
     {
         // A 64-bit multiply-mix over the raw bytes of each static column, eight bytes at a time, with
         // each column's length folded in so that moving bytes between adjacent columns changes the
@@ -404,7 +408,7 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreCsvReaderOptions opt
         foreach (int column in this.columns.StaticColumns)
         {
             int length = 0;
-            if (column >= 0 && column < fieldCount)
+            if (column >= 0 && column < fields.Length)
             {
                 ReadOnlySpan<byte> bytes = fields[column].In(line);
                 length = bytes.Length;
