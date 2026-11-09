@@ -62,6 +62,11 @@ internal static class GeoPackageGeometry
             return [];
         }
 
+        if (blob.Length < HeaderLength + envelopeLength)
+        {
+            throw new InvalidDataException("The GeoPackage geometry ends inside its envelope.");
+        }
+
         ReadOnlySpan<byte> wkb = blob[(HeaderLength + envelopeLength)..];
 
         int offset = 0;
@@ -198,9 +203,9 @@ internal static class GeoPackageGeometry
             case LineStringType:
             {
                 Require(wkb, offset, 4);
-                int count = checked((int)ReadUInt32(wkb, offset, littleEndian));
+                int count = ReadCount(wkb, offset, littleEndian);
                 offset += 4;
-                Require(wkb, offset, checked(count * stride));
+                Require(wkb, offset, (long)count * stride);
                 if (countOnly)
                 {
                     offset += count * stride;
@@ -239,7 +244,7 @@ internal static class GeoPackageGeometry
             case MultiLineStringType:
             {
                 Require(wkb, offset, 4);
-                int parts = checked((int)ReadUInt32(wkb, offset, littleEndian));
+                int parts = ReadCount(wkb, offset, littleEndian);
                 offset += 4;
                 for (int i = 0; i < parts; i++)
                 {
@@ -254,12 +259,25 @@ internal static class GeoPackageGeometry
         }
     }
 
-    private static void Require(ReadOnlySpan<byte> wkb, int offset, int bytes)
+    private static void Require(ReadOnlySpan<byte> wkb, int offset, long bytes)
     {
-        if ((long)offset + bytes > wkb.Length)
+        if (offset + bytes > wkb.Length)
         {
             throw new InvalidDataException("The geometry ends before its declared content.");
         }
+    }
+
+    // A point or part count. The remaining bytes bound it, so a count beyond int.MaxValue is corrupt
+    // data, not a size this code must support.
+    private static int ReadCount(ReadOnlySpan<byte> wkb, int offset, bool littleEndian)
+    {
+        uint count = ReadUInt32(wkb, offset, littleEndian);
+        if (count > int.MaxValue)
+        {
+            throw new InvalidDataException("The geometry declares more elements than it can hold.");
+        }
+
+        return (int)count;
     }
 
     private static uint ReadUInt32(ReadOnlySpan<byte> bytes, int offset, bool littleEndian) =>

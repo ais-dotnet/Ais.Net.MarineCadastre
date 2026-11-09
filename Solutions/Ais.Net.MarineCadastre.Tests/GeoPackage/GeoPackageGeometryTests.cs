@@ -117,6 +117,29 @@ public class GeoPackageGeometryTests
     }
 
     [TestMethod]
+    public void RejectsABlobThatEndsInsideItsEnvelope()
+    {
+        byte[] blob = GeoPackageGeometry.Encode([PartA], envelopeIndicator: 1);
+
+        Should.Throw<InvalidDataException>(() => GeoPackageGeometry.DecodeLine(blob.AsSpan(0, 20), out _))
+            .Message.ShouldContain("envelope");
+    }
+
+    [TestMethod]
+    public void RejectsPointAndPartCountsThatCannotFit()
+    {
+        // A LineString whose point count is 0xFFFFFFFF, and a MultiLineString whose part count is 0x80000000.
+        byte[] line = GeoPackageGeometry.Encode([PartA], forceMulti: false);
+        line.AsSpan(13, 4).Fill(0xFF);
+        byte[] multi = GeoPackageGeometry.Encode([PartA]);
+        multi.AsSpan(13, 4).Fill(0);
+        multi[16] = 0x80;
+
+        Should.Throw<InvalidDataException>(() => GeoPackageGeometry.DecodeLine(line, out _));
+        Should.Throw<InvalidDataException>(() => GeoPackageGeometry.DecodeLine(multi, out _));
+    }
+
+    [TestMethod]
     public void RejectsInvalidEnvelopeIndicators()
     {
         byte[] blob = GeoPackageGeometry.Encode([PartA]);

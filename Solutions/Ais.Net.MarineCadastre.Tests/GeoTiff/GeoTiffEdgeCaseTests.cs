@@ -106,6 +106,14 @@ public class GeoTiffEdgeCaseTests
     }
 
     [TestMethod]
+    public void UnsupportedPredictorsAreRejected()
+    {
+        using GeoTiffBuilder builder = new(Width, Height, Cells()) { Predictor = 3 };
+
+        Should.Throw<NotSupportedException>(() => MarineCadastreTransitCountReader.Open(builder.Write())).Message.ShouldContain("predictor 3");
+    }
+
+    [TestMethod]
     public void MultiBandRastersAreRejected()
     {
         using GeoTiffBuilder builder = new(Width, Height, Cells()) { SamplesPerPixel = 3 };

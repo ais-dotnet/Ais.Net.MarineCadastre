@@ -333,6 +333,12 @@ internal sealed class GeoTiffFile : IDisposable
             throw new NotSupportedException($"Only 8, 16 and 32-bit integer samples are supported, not {bitsPerSample}-bit sample format {sampleFormat}.");
         }
 
+        int predictor = (int)Integer(TagPredictor, 1);
+        if (predictor is not (1 or 2))
+        {
+            throw new NotSupportedException($"TIFF predictor {predictor} is not supported; only none (1) and horizontal differencing (2) are.");
+        }
+
         int width = checked((int)Integer(TagImageWidth, 0));
         int height = checked((int)Integer(TagImageLength, 0));
         if (width <= 0 || height <= 0)
@@ -378,7 +384,7 @@ internal sealed class GeoTiffFile : IDisposable
             BlockHeight = blockHeight,
             Tiled = tiled,
             Compression = (int)Integer(TagCompression, CompressionNone),
-            Predictor = (int)Integer(TagPredictor, 1),
+            Predictor = predictor,
             BitsPerSample = bitsPerSample,
             SampleFormat = sampleFormat,
             BlockOffsets = offsets,
