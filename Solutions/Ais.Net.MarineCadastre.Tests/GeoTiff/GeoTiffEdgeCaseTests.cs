@@ -203,7 +203,8 @@ public class GeoTiffEdgeCaseTests
         statistics.Count.ShouldBeNull();
         statistics.Minimum.ShouldBe(1);
         statistics.Maximum.ShouldBe(9);
-        statistics.Mean.ShouldBe(double.NaN);
+        statistics.Mean.ShouldBeNull();
+        statistics.StandardDeviation.ShouldBeNull();
     }
 
     private static string WriteBytes(byte[] bytes)

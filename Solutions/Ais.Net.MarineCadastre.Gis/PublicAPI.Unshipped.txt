@@ -100,17 +100,17 @@ Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics
 Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.<Clone>$() -> Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics!
 Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Count.get -> long?
 Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Count.init -> void
-Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Deconstruct(out long? Count, out double Minimum, out double Maximum, out double Mean, out double StandardDeviation) -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Deconstruct(out long? Count, out double Minimum, out double Maximum, out double? Mean, out double? StandardDeviation) -> void
 Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Equals(Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics? other) -> bool
 Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Maximum.get -> double
 Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Maximum.init -> void
-Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Mean.get -> double
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Mean.get -> double?
 Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Mean.init -> void
 Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Minimum.get -> double
 Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.Minimum.init -> void
-Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.StandardDeviation.get -> double
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.StandardDeviation.get -> double?
 Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.StandardDeviation.init -> void
-Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.TransitCountStatistics(long? Count, double Minimum, double Maximum, double Mean, double StandardDeviation) -> void
+Ais.Net.MarineCadastre.TransitCounts.TransitCountStatistics.TransitCountStatistics(long? Count, double Minimum, double Maximum, double? Mean, double? StandardDeviation) -> void
 Ais.Net.MarineCadastre.TransitCounts.TransitTile
 Ais.Net.MarineCadastre.TransitCounts.TransitTile.<Clone>$() -> Ais.Net.MarineCadastre.TransitCounts.TransitTile!
 Ais.Net.MarineCadastre.TransitCounts.TransitTile.Bounds.get -> Ais.Net.MarineCadastre.BoundingBox

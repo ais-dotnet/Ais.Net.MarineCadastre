@@ -14,9 +14,9 @@ namespace Ais.Net.MarineCadastre.TransitCounts;
 /// <param name="Count">The number of cells that hold data, or <see langword="null"/> if the file does not record it.</param>
 /// <param name="Minimum">The smallest count.</param>
 /// <param name="Maximum">The largest count.</param>
-/// <param name="Mean">The mean count over the cells with data.</param>
-/// <param name="StandardDeviation">The standard deviation of the counts over the cells with data.</param>
-public sealed record TransitCountStatistics(long? Count, double Minimum, double Maximum, double Mean, double StandardDeviation)
+/// <param name="Mean">The mean count over the cells with data, or <see langword="null"/> if the file does not record it.</param>
+/// <param name="StandardDeviation">The standard deviation of the counts over the cells with data, or <see langword="null"/> if the file does not record it.</param>
+public sealed record TransitCountStatistics(long? Count, double Minimum, double Maximum, double? Mean, double? StandardDeviation)
 {
     /// <summary>
     /// Reads the statistics from the GDAL metadata XML, if it has them.
@@ -57,7 +57,7 @@ public sealed record TransitCountStatistics(long? Count, double Minimum, double 
             items.TryGetValue("STATISTICS_COUNT", out double count) ? (long)count : null,
             minimum,
             maximum,
-            items.GetValueOrDefault("STATISTICS_MEAN", double.NaN),
-            items.GetValueOrDefault("STATISTICS_STDDEV", double.NaN));
+            items.TryGetValue("STATISTICS_MEAN", out double mean) ? mean : null,
+            items.TryGetValue("STATISTICS_STDDEV", out double standardDeviation) ? standardDeviation : null);
     }
 }

@@ -102,7 +102,8 @@ public sealed class TransitCountRaster : IDisposable
 
     /// <summary>
     /// Gets the count of the cell under a position. The raster reads one tile and caches it for the
-    /// next lookup in the same tile.
+    /// next lookup in the same tile. The result is 0 for a NoData cell and for a position outside the
+    /// raster. To tell the two apart, test the position with <see cref="Extent"/>.
     /// </summary>
     /// <param name="position">The position.</param>
     /// <param name="level">The level. 0 is full resolution.</param>
