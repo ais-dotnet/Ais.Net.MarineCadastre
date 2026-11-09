@@ -7,31 +7,31 @@ using Ais.Net.Models.Abstractions;
 namespace Ais.Net.MarineCadastre.Tracks;
 
 /// <summary>
-/// One row of a MarineCadastre AIS Vessel Tracks GeoPackage: the path one vessel followed over part of
-/// one day, with the static data MarineCadastre attached to it.
+/// One row of a MarineCadastre AIS Vessel Tracks GeoPackage. It is the path of one vessel over part of
+/// one day, with the static data of the vessel.
 /// </summary>
 /// <remarks>
 /// <para>
-/// The vertices are the vessel's reported positions in time order, but the file stores them as a plain
-/// two-dimensional line, so individual vertices carry no timestamp. Only <see cref="StartTime"/> and
-/// <see cref="EndTime"/> are known for the track as a whole.
+/// The vertices are the reported positions of the vessel, in time order. But the file stores them as a
+/// plain two-dimensional line, so each vertex has no timestamp. The track as a whole has only
+/// <see cref="StartTime"/> and <see cref="EndTime"/>.
 /// </para>
 /// <para>
-/// Columns that are empty in the file are <see langword="null"/> here, except where an Ais.Net.Models
-/// interface requires a value: <see cref="VesselName"/> and <see cref="CallSign"/> are then empty,
-/// <see cref="ShipType"/> is <see cref="Ais.Net.ShipType.NotAvailable"/> and
+/// Columns that are empty in the file are <see langword="null"/> here. The exception is where an
+/// Ais.Net.Models interface needs a value. Then <see cref="VesselName"/> and <see cref="CallSign"/> are
+/// empty, <see cref="ShipType"/> is <see cref="Ais.Net.ShipType.NotAvailable"/>, and
 /// <see cref="NavigationStatus"/> is <see cref="Ais.Net.NavigationStatus.NotDefined"/>.
 /// </para>
 /// <para>
-/// Equality is by value for every member except <see cref="Points"/>, which compares by reference.
+/// Equality compares each member by value, except <see cref="Points"/>, which it compares by reference.
 /// </para>
 /// </remarks>
-/// <param name="Id">The row's primary key (<c>OBJECTID</c>) in the file.</param>
+/// <param name="Id">The primary key (<c>OBJECTID</c>) of the row in the file.</param>
 /// <param name="Mmsi">The Maritime Mobile Service Identity of the vessel.</param>
 /// <param name="StartTime">The time of the first position, as UTC.</param>
 /// <param name="EndTime">The time of the last position, as UTC.</param>
 /// <param name="Points">The positions along the track, in time order.</param>
-/// <exception cref="ArgumentNullException">Thrown when <paramref name="Points"/> is <see langword="null"/>.</exception>
+/// <exception cref="ArgumentNullException">This exception occurs if <paramref name="Points"/> is <see langword="null"/>.</exception>
 public sealed record VesselTrack(
     long Id,
     uint Mmsi,
@@ -44,21 +44,21 @@ public sealed record VesselTrack(
     /// Gets the positions along the track, in time order.
     /// </summary>
     /// <remarks>
-    /// Tracks from <see cref="MarineCadastreTrackReader"/> hold a read-only list that cannot be cast
-    /// back to an array or other mutable collection.
+    /// Tracks from <see cref="MarineCadastreTrackReader"/> hold a read-only list. You cannot cast it
+    /// back to an array or to a different mutable collection.
     /// </remarks>
-    /// <exception cref="ArgumentNullException">Thrown when set to <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException">This exception occurs if you set the value to <see langword="null"/>.</exception>
     public IReadOnlyList<Position> Points { get; init => field = value ?? throw new ArgumentNullException(nameof(this.Points)); }
         = Points ?? throw new ArgumentNullException(nameof(Points));
 
     /// <summary>
-    /// Gets the length of the track in time: the file's <c>duration_minutes</c> when present, otherwise
-    /// <see cref="EndTime"/> less <see cref="StartTime"/>.
+    /// Gets the length of the track in time. It is the <c>duration_minutes</c> of the file when present.
+    /// If not, it is <see cref="EndTime"/> minus <see cref="StartTime"/>.
     /// </summary>
     public TimeSpan Duration { get; init; }
 
     /// <summary>
-    /// Gets the smallest box enclosing <see cref="Points"/>.
+    /// Gets the smallest box that contains <see cref="Points"/>.
     /// </summary>
     public BoundingBox Envelope { get; init; }
 
@@ -69,7 +69,7 @@ public sealed record VesselTrack(
     public string CallSign { get; init; } = string.Empty;
 
     /// <summary>
-    /// Gets the IMO ship identification number, or <see langword="null"/> when the file has none.
+    /// Gets the IMO ship identification number, or <see langword="null"/> if the file has none.
     /// </summary>
     public uint? ImoNumber { get; init; }
 
@@ -77,8 +77,8 @@ public sealed record VesselTrack(
     public ShipType ShipType { get; init; } = ShipType.NotAvailable;
 
     /// <summary>
-    /// Gets MarineCadastre's description of <see cref="ShipType"/>, such as <c>Pleasure Craft</c>, or
-    /// empty when the file has none.
+    /// Gets the MarineCadastre description of <see cref="ShipType"/>, for example <c>Pleasure Craft</c>.
+    /// It is empty if the file has none.
     /// </summary>
     public string ShipTypeName { get; init; } = string.Empty;
 
@@ -86,28 +86,28 @@ public sealed record VesselTrack(
     public NavigationStatus NavigationStatus { get; init; } = NavigationStatus.NotDefined;
 
     /// <summary>
-    /// Gets the vessel length in metres, or <see langword="null"/> when the file has none.
+    /// Gets the length of the vessel in metres, or <see langword="null"/> if the file has none.
     /// </summary>
     public uint? Length { get; init; }
 
     /// <summary>
-    /// Gets the vessel width in metres, or <see langword="null"/> when the file has none.
+    /// Gets the width of the vessel in metres, or <see langword="null"/> if the file has none.
     /// </summary>
     public uint? Width { get; init; }
 
     /// <summary>
-    /// Gets the vessel draught in metres, or <see langword="null"/> when the file has none.
+    /// Gets the draught of the vessel in metres, or <see langword="null"/> if the file has none.
     /// </summary>
     public double? Draught { get; init; }
 
     /// <summary>
-    /// Gets the file's <c>cargo</c> code, or <see langword="null"/> when the file has none. It is the
-    /// fallback for <see cref="ShipType"/> when <c>vessel_type</c> is empty.
+    /// Gets the <c>cargo</c> code of the file, or <see langword="null"/> if the file has none.
+    /// <see cref="ShipTypeSource"/> says if this code or <c>vessel_type</c> supplies <see cref="ShipType"/>.
     /// </summary>
     public uint? Cargo { get; init; }
 
     /// <summary>
-    /// Gets a value indicating whether the vessel reported through a Class B transceiver.
+    /// Gets a value that is <see langword="true"/> if the vessel reported through a Class B transceiver.
     /// </summary>
     public bool IsClassB { get; init; }
 }

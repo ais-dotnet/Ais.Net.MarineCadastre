@@ -7,15 +7,15 @@ using System.Buffers;
 namespace Ais.Net.MarineCadastre.GeoTiff;
 
 /// <summary>
-/// Decodes TIFF LZW (compression 5): the LZW variant with most-significant-bit-first codes, 9 to 12
-/// bits wide, where the code width grows one code earlier than in the original LZW, as libtiff writes
-/// and reads it.
+/// Decodes TIFF LZW (compression 5). This is the LZW variant with most-significant-bit-first codes of
+/// 9 to 12 bits. In this variant the code width grows one code earlier than in the original LZW. This
+/// is how libtiff writes and reads it.
 /// </summary>
 /// <remarks>
-/// Every string the code table defines is a substring of the output already produced since the last
-/// clear code, so the table holds (start, length) pairs into the output and a code decodes as one block
-/// copy. On a sparse raster most codes stand for long runs of zero bytes, and copying them is several
-/// times faster than rebuilding them a byte at a time through prefix links.
+/// Each string that the code table defines is a substring of the output since the last clear code.
+/// Thus the table holds (start, length) pairs into the output, and a code decodes as one block copy. On
+/// a sparse raster most codes stand for long runs of zero bytes. A copy of such a run is several times
+/// faster than a rebuild one byte at a time through prefix links.
 /// </remarks>
 internal static class LzwDecoder
 {
@@ -30,8 +30,8 @@ internal static class LzwDecoder
     /// </summary>
     /// <param name="input">The compressed bytes.</param>
     /// <param name="output">Where the decoded bytes go.</param>
-    /// <returns>The number of bytes decoded, which is less than the output length only when the stream ended early.</returns>
-    /// <exception cref="InvalidDataException">Thrown when a code refers to an entry the table does not have.</exception>
+    /// <returns>The number of decoded bytes. It is less than the output length only if the stream ended early.</returns>
+    /// <exception cref="InvalidDataException">This exception occurs if a code refers to an entry that the table does not have.</exception>
     public static int Decode(ReadOnlySpan<byte> input, Span<byte> output)
     {
         int[] start = ArrayPool<int>.Shared.Rent(TableSize);

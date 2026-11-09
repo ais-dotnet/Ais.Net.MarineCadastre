@@ -9,22 +9,23 @@ using Ais.Net.Models;
 namespace Ais.Net.MarineCadastre.Csv;
 
 /// <summary>
-/// Reads a MarineCadastre AIS vessel-traffic CSV file and yields Ais.Net.Models messages, one position
-/// report per row plus a static-data message whenever a vessel's static columns first appear or change.
-/// Every message has its <see cref="AisMessageBase.Timestamp"/> set from the row's <c>base_date_time</c>.
+/// Reads a MarineCadastre AIS vessel-traffic CSV file and returns Ais.Net.Models messages. Each row
+/// gives one position report. When the static columns of a vessel first appear or change, the reader
+/// also returns a static-data message. The <see cref="AisMessageBase.Timestamp"/> of each message is
+/// the <c>base_date_time</c> of the row.
 /// </summary>
 /// <remarks>
-/// The reader streams: it holds one block of the file and one position report at a time, plus a
-/// per-vessel 8-byte signature for static-data de-duplication. The archives are published at
-/// <see href="https://hub.marinecadastre.gov/pages/vesseltraffic"/>.
+/// The reader streams the file. It holds one block of the file and one position report at a time. It
+/// also keeps an 8-byte signature for each vessel, to find static data that it already returned.
+/// MarineCadastre publishes the archives at <see href="https://hub.marinecadastre.gov/pages/vesseltraffic"/>.
 /// </remarks>
 public static class MarineCadastreCsvReader
 {
     /// <summary>
     /// Reads messages from a CSV stream.
     /// </summary>
-    /// <param name="stream">The CSV content, header line first.</param>
-    /// <param name="options">Reader settings; <see cref="MarineCadastreCsvReaderOptions.Default"/> when omitted.</param>
+    /// <param name="stream">The CSV content. The header line is first.</param>
+    /// <param name="options">The reader settings. If you do not give options, the reader uses <see cref="MarineCadastreCsvReaderOptions.Default"/>.</param>
     /// <returns>The messages, in file order.</returns>
     public static IEnumerable<AisMessageBase> Read(Stream stream, MarineCadastreCsvReaderOptions? options = null)
     {
@@ -35,8 +36,8 @@ public static class MarineCadastreCsvReader
     /// <summary>
     /// Reads messages from a CSV file.
     /// </summary>
-    /// <param name="path">Path of the CSV file.</param>
-    /// <param name="options">Reader settings; <see cref="MarineCadastreCsvReaderOptions.Default"/> when omitted.</param>
+    /// <param name="path">The path of the CSV file.</param>
+    /// <param name="options">The reader settings. If you do not give options, the reader uses <see cref="MarineCadastreCsvReaderOptions.Default"/>.</param>
     /// <returns>The messages, in file order.</returns>
     public static IEnumerable<AisMessageBase> ReadFile(string path, MarineCadastreCsvReaderOptions? options = null)
     {
@@ -47,9 +48,9 @@ public static class MarineCadastreCsvReader
     /// <summary>
     /// Reads messages from a CSV stream asynchronously.
     /// </summary>
-    /// <param name="stream">The CSV content, header line first.</param>
-    /// <param name="options">Reader settings; <see cref="MarineCadastreCsvReaderOptions.Default"/> when omitted.</param>
-    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <param name="stream">The CSV content. The header line is first.</param>
+    /// <param name="options">The reader settings. If you do not give options, the reader uses <see cref="MarineCadastreCsvReaderOptions.Default"/>.</param>
+    /// <param name="cancellationToken">A token that cancels the read.</param>
     /// <returns>The messages, in file order.</returns>
     public static IAsyncEnumerable<AisMessageBase> ReadAsync(Stream stream, MarineCadastreCsvReaderOptions? options = null, CancellationToken cancellationToken = default)
     {
@@ -60,9 +61,9 @@ public static class MarineCadastreCsvReader
     /// <summary>
     /// Reads messages from a CSV file asynchronously.
     /// </summary>
-    /// <param name="path">Path of the CSV file.</param>
-    /// <param name="options">Reader settings; <see cref="MarineCadastreCsvReaderOptions.Default"/> when omitted.</param>
-    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <param name="path">The path of the CSV file.</param>
+    /// <param name="options">The reader settings. If you do not give options, the reader uses <see cref="MarineCadastreCsvReaderOptions.Default"/>.</param>
+    /// <param name="cancellationToken">A token that cancels the read.</param>
     /// <returns>The messages, in file order.</returns>
     public static IAsyncEnumerable<AisMessageBase> ReadFileAsync(string path, MarineCadastreCsvReaderOptions? options = null, CancellationToken cancellationToken = default)
     {

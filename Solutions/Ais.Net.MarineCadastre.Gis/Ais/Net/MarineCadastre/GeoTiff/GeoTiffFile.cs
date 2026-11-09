@@ -13,9 +13,10 @@ using Microsoft.Win32.SafeHandles;
 namespace Ais.Net.MarineCadastre.GeoTiff;
 
 /// <summary>
-/// Reads the parts of a GeoTIFF a transit-count raster needs: the image directories (classic and
-/// BigTIFF), tiepoint-and-scale georeferencing with a recognised coordinate system, GDAL's NoData and
-/// statistics, and individual tiles or strips decoded from LZW, Deflate or no compression.
+/// Reads the parts of a GeoTIFF that a transit-count raster needs. It reads the image directories of a
+/// classic TIFF or a BigTIFF. It reads the georeferencing from a tiepoint and a scale, with a coordinate
+/// system that it knows. It reads the NoData value and the statistics of GDAL. It decodes tiles or
+/// strips from LZW, Deflate or no compression.
 /// </summary>
 internal sealed class GeoTiffFile : IDisposable
 {

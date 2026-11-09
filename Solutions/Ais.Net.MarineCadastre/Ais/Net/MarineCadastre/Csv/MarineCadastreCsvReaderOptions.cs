@@ -10,30 +10,31 @@ namespace Ais.Net.MarineCadastre.Csv;
 public sealed record MarineCadastreCsvReaderOptions
 {
     /// <summary>
-    /// Gets the options every reader uses unless told otherwise.
+    /// Gets the options that each reader uses if you do not give options.
     /// </summary>
     public static MarineCadastreCsvReaderOptions Default { get; } = new();
 
     /// <summary>
-    /// Gets a value indicating whether static-data messages are emitted. When <see langword="true"/>
-    /// (the default) a vessel's static columns are emitted as a message type 5 (Class A) or message
-    /// types 19 and 24 part 1 (Class B) the first time the vessel is seen and again whenever those
-    /// columns change. When <see langword="false"/> only position reports are emitted.
+    /// Gets a value that is <see langword="true"/> if the reader returns static-data messages. The
+    /// default is <see langword="true"/>. The reader then returns the static columns of a vessel as a
+    /// message type 5 (Class A). For Class B, it returns them as message types 19 and 24 part 1. It does
+    /// this the first time that it sees the vessel, and each time that those columns change. If
+    /// <see langword="false"/>, the reader returns only position reports.
     /// </summary>
     public bool EmitStaticData { get; init; } = true;
 
     /// <summary>
-    /// Gets the column that supplies the ship type. Defaults to
+    /// Gets the column that supplies the ship type. The default is
     /// <see cref="ShipTypeSource.VesselTypeThenCargo"/>.
     /// </summary>
     public ShipTypeSource ShipTypeSource { get; init; } = ShipTypeSource.VesselTypeThenCargo;
 
     /// <summary>
-    /// Gets the AIS message type (1, 2 or 3) reported for Class A position rows. The CSV does not say
-    /// which of the three a row came from, so one value is used for all. Defaults to 1. Must be 1, 2
-    /// or 3.
+    /// Gets the AIS message type (1, 2 or 3) that the reader gives to Class A position rows. The CSV
+    /// does not say which of the three types a row came from. Thus the reader uses one value for all
+    /// the rows. The default is 1. The value must be 1, 2 or 3.
     /// </summary>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when the value is not 1, 2 or 3.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">This exception occurs if the value is not 1, 2 or 3.</exception>
     public int ClassAMessageType
     {
         get;
@@ -46,15 +47,16 @@ public sealed record MarineCadastreCsvReaderOptions
     } = 1;
 
     /// <summary>
-    /// Gets a callback invoked for each data row the reader could not parse and dropped. It runs on
-    /// the reading thread, before the next row is read. When <see langword="null"/> (the default)
-    /// such rows are dropped silently.
+    /// Gets a callback that the reader calls for each data row that it could not parse and dropped.
+    /// The callback runs on the reader thread, before the reader reads the next row. If it is
+    /// <see langword="null"/> (the default), the reader drops those rows without a report.
     /// </summary>
     /// <remarks>
-    /// The <see cref="SkippedCsvRow"/> argument is valid only during the call. An exception thrown by
-    /// the callback ends the read, so throwing makes the read strict. The header and blank lines are
-    /// never reported, and a row whose position is missing or out of range is not skipped: it is
-    /// emitted with a <see langword="null"/> position.
+    /// The <see cref="SkippedCsvRow"/> argument is valid only during the call. If the callback throws
+    /// an exception, the read stops with that exception. Thus a callback that throws makes the read
+    /// strict. The reader never reports the header or blank lines. A row with a missing or
+    /// out-of-range position is not a skipped row. The reader returns it with a <see langword="null"/>
+    /// position.
     /// </remarks>
     public Action<SkippedCsvRow>? OnRowSkipped { get; init; }
 }

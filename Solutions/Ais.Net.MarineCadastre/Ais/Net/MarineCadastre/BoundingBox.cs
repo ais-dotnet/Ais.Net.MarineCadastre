@@ -7,62 +7,65 @@ using Ais.Net.Models.Abstractions;
 namespace Ais.Net.MarineCadastre;
 
 /// <summary>
-/// A geographic bounding box in WGS84 degrees. Boxes that cross the antimeridian are not supported:
-/// <paramref name="West"/> must not exceed <paramref name="East"/>.
+/// A geographic bounding box in WGS84 degrees. The box cannot cross the antimeridian:
+/// <paramref name="West"/> must not be more than <paramref name="East"/>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// The box is checked when it is constructed. Longitudes must be between -180 and 180 degrees,
-/// latitudes between -90 and 90 degrees, and none may be NaN. <paramref name="West"/> must not exceed
-/// <paramref name="East"/>, and <paramref name="South"/> must not exceed <paramref name="North"/>. So a
-/// box with latitude and longitude swapped throws instead of silently matching nothing. The properties
-/// are get-only, so a <see langword="with"/> expression cannot bypass the checks.
+/// The constructor checks the box. Each longitude must be between -180 and 180 degrees. Each latitude
+/// must be between -90 and 90 degrees. No value can be NaN. <paramref name="West"/> must not be more
+/// than <paramref name="East"/>, and <paramref name="South"/> must not be more than
+/// <paramref name="North"/>. Thus a box with the latitude and the longitude in the wrong positions
+/// causes an exception, not an empty result. The properties are get-only. Thus a
+/// <see langword="with"/> expression cannot make a box that does not pass the checks.
 /// </para>
 /// <para>
-/// <c>default(BoundingBox)</c> is valid: the zero-area box at latitude 0, longitude 0.
+/// <c>default(BoundingBox)</c> is a valid box. It has zero area at latitude 0 and longitude 0.
 /// </para>
 /// </remarks>
-/// <param name="West">The westernmost longitude, in degrees.</param>
-/// <param name="South">The southernmost latitude, in degrees.</param>
-/// <param name="East">The easternmost longitude, in degrees.</param>
-/// <param name="North">The northernmost latitude, in degrees.</param>
+/// <param name="West">The longitude of the west edge, in degrees.</param>
+/// <param name="South">The latitude of the south edge, in degrees.</param>
+/// <param name="East">The longitude of the east edge, in degrees.</param>
+/// <param name="North">The latitude of the north edge, in degrees.</param>
 /// <exception cref="ArgumentOutOfRangeException">
-/// Thrown when a longitude is outside -180 to 180 degrees, a latitude is outside -90 to 90 degrees, or a value is NaN.
+/// This exception occurs if a longitude is outside -180 to 180 degrees or a latitude is outside -90 to
+/// 90 degrees. It also occurs if a value is NaN.
 /// </exception>
 /// <exception cref="ArgumentException">
-/// Thrown when <paramref name="West"/> exceeds <paramref name="East"/> or <paramref name="South"/> exceeds <paramref name="North"/>.
+/// This exception occurs if <paramref name="West"/> is more than <paramref name="East"/>, or if
+/// <paramref name="South"/> is more than <paramref name="North"/>.
 /// </exception>
 public readonly record struct BoundingBox(double West, double South, double East, double North)
 {
     /// <summary>
-    /// Gets the westernmost longitude, in degrees.
+    /// Gets the longitude of the west edge, in degrees.
     /// </summary>
     public double West { get; } = CheckLongitude(West, nameof(West));
 
     /// <summary>
-    /// Gets the southernmost latitude, in degrees.
+    /// Gets the latitude of the south edge, in degrees.
     /// </summary>
     public double South { get; } = CheckLatitude(South, nameof(South));
 
     /// <summary>
-    /// Gets the easternmost longitude, in degrees.
+    /// Gets the longitude of the east edge, in degrees.
     /// </summary>
     public double East { get; } = CheckEast(West, East);
 
     /// <summary>
-    /// Gets the northernmost latitude, in degrees.
+    /// Gets the latitude of the north edge, in degrees.
     /// </summary>
     public double North { get; } = CheckNorth(South, North);
 
     /// <summary>
-    /// Gets the smallest box enclosing a set of positions.
+    /// Gets the smallest box that contains all the positions.
     /// </summary>
-    /// <param name="positions">The positions; at least one.</param>
-    /// <returns>The enclosing box.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="positions"/> is empty.</exception>
+    /// <param name="positions">The positions. There must be at least one.</param>
+    /// <returns>The box that contains the positions.</returns>
+    /// <exception cref="ArgumentException">This exception occurs if <paramref name="positions"/> is empty.</exception>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// Thrown when a position has a latitude outside -90 to 90 degrees, a longitude outside -180 to 180
-    /// degrees, or a NaN coordinate.
+    /// This exception occurs if a position has a latitude outside -90 to 90 degrees, a longitude outside
+    /// -180 to 180 degrees, or a NaN coordinate.
     /// </exception>
     public static BoundingBox FromPositions(ReadOnlySpan<Position> positions)
     {
@@ -87,18 +90,18 @@ public readonly record struct BoundingBox(double West, double South, double East
     }
 
     /// <summary>
-    /// Tests whether this box and another share any area, edges included.
+    /// Tests if this box and another box have a common area. Boxes that touch at an edge also intersect.
     /// </summary>
     /// <param name="other">The other box.</param>
-    /// <returns><see langword="true"/> when the boxes overlap or touch.</returns>
+    /// <returns><see langword="true"/> if the boxes have a common area or touch.</returns>
     public bool Intersects(BoundingBox other) =>
         this.West <= other.East && this.East >= other.West && this.South <= other.North && this.North >= other.South;
 
     /// <summary>
-    /// Tests whether a position lies inside this box, edges included.
+    /// Tests if a position is inside this box. A position on an edge is inside.
     /// </summary>
     /// <param name="position">The position.</param>
-    /// <returns><see langword="true"/> when the position is inside or on the edge.</returns>
+    /// <returns><see langword="true"/> if the position is inside the box or on an edge.</returns>
     public bool Contains(Position position) =>
         position.Longitude >= this.West && position.Longitude <= this.East && position.Latitude >= this.South && position.Latitude <= this.North;
 

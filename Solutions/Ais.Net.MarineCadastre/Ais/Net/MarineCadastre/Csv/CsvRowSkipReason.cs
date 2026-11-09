@@ -5,23 +5,23 @@
 namespace Ais.Net.MarineCadastre.Csv;
 
 /// <summary>
-/// Why <see cref="MarineCadastreCsvReader"/> could not parse a data row and dropped it.
+/// The reason that <see cref="MarineCadastreCsvReader"/> could not parse a data row and dropped it.
 /// </summary>
 public enum CsvRowSkipReason
 {
     /// <summary>
-    /// The row has fewer fields than the required columns (<c>mmsi</c>, <c>base_date_time</c>,
-    /// <c>longitude</c> and <c>latitude</c>) need.
+    /// The row does not have enough fields to include the required columns (<c>mmsi</c>,
+    /// <c>base_date_time</c>, <c>longitude</c> and <c>latitude</c>).
     /// </summary>
     TooFewFields,
 
     /// <summary>
-    /// The <c>mmsi</c> field is empty or does not start with an unsigned integer.
+    /// The <c>mmsi</c> field is empty, or it does not start with an unsigned integer.
     /// </summary>
     InvalidMmsi,
 
     /// <summary>
-    /// The <c>base_date_time</c> field is not a readable date and time.
+    /// The reader cannot read the <c>base_date_time</c> field as a date and time.
     /// </summary>
     InvalidTimestamp,
 }

@@ -9,24 +9,24 @@ using Ais.Net.MarineCadastre.GeoTiff;
 namespace Ais.Net.MarineCadastre.TransitCounts;
 
 /// <summary>
-/// Opens the yearly AIS Vessel Transit Counts rasters published by MarineCadastre.gov: GeoTIFFs whose
+/// Opens the yearly AIS Vessel Transit Counts rasters from MarineCadastre.gov. These are GeoTIFFs whose
 /// 100 m cells count vessel transits.
 /// </summary>
 /// <remarks>
-/// The reader handles the files as published, which are BigTIFFs in Web Mercator with LZW tiles and
-/// Deflate overviews, and the nearby variations: classic TIFF, strips, no compression, 8 or 16-bit
-/// cells, geographic coordinates. It does not need GDAL.
+/// The reader handles the files as MarineCadastre publishes them: BigTIFFs in Web Mercator with LZW
+/// tiles and Deflate overviews. It also handles the near variations: classic TIFF, strips, no
+/// compression, 8 or 16-bit cells, and geographic coordinates. It does not need GDAL.
 /// </remarks>
 public static class MarineCadastreTransitCountReader
 {
     /// <summary>
-    /// Opens a raster for repeated lookups and reads. Dispose it to close the file.
+    /// Opens a raster for repeated lookups and reads. Dispose the raster to close the file.
     /// </summary>
-    /// <param name="path">Path of the <c>.tif</c> file.</param>
+    /// <param name="path">The path of the <c>.tif</c> file.</param>
     /// <returns>The open raster.</returns>
-    /// <exception cref="FileNotFoundException">Thrown when the file does not exist.</exception>
-    /// <exception cref="InvalidDataException">Thrown when the file is not a GeoTIFF this reader can place on the Earth.</exception>
-    /// <exception cref="NotSupportedException">Thrown when the file uses a coordinate system, compression or sample type outside the supported set.</exception>
+    /// <exception cref="FileNotFoundException">This exception occurs if the file does not exist.</exception>
+    /// <exception cref="InvalidDataException">This exception occurs if the file is not a GeoTIFF that this reader can place on the Earth.</exception>
+    /// <exception cref="NotSupportedException">This exception occurs if the file uses a coordinate system, a compression or a sample type that the reader does not support.</exception>
     public static TransitCountRaster Open(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -39,11 +39,11 @@ public static class MarineCadastreTransitCountReader
     }
 
     /// <summary>
-    /// Streams the cells that hold data from a file, opening it for the life of each subscription.
+    /// Streams the cells that hold data from a file. The file is open for the life of each subscription.
     /// See <see cref="TransitCountRaster.Observe"/>.
     /// </summary>
-    /// <param name="path">Path of the <c>.tif</c> file.</param>
-    /// <param name="options">Filters; <see cref="TransitCountReaderOptions.Default"/> when omitted.</param>
+    /// <param name="path">The path of the <c>.tif</c> file.</param>
+    /// <param name="options">The filters. If you do not give options, the reader uses <see cref="TransitCountReaderOptions.Default"/>.</param>
     /// <returns>The cells, tile by tile from north-west to south-east.</returns>
     public static IObservable<TransitCell> Observe(string path, TransitCountReaderOptions? options = null)
     {
@@ -52,11 +52,11 @@ public static class MarineCadastreTransitCountReader
     }
 
     /// <summary>
-    /// Streams the tiles that hold data from a file, opening it for the life of each subscription.
+    /// Streams the tiles that hold data from a file. The file is open for the life of each subscription.
     /// See <see cref="TransitCountRaster.ObserveTiles"/>.
     /// </summary>
-    /// <param name="path">Path of the <c>.tif</c> file.</param>
-    /// <param name="options">Filters; <see cref="TransitCountReaderOptions.Default"/> when omitted.</param>
+    /// <param name="path">The path of the <c>.tif</c> file.</param>
+    /// <param name="options">The filters. If you do not give options, the reader uses <see cref="TransitCountReaderOptions.Default"/>.</param>
     /// <returns>The tiles, from north-west to south-east.</returns>
     public static IObservable<TransitTile> ObserveTiles(string path, TransitCountReaderOptions? options = null)
     {

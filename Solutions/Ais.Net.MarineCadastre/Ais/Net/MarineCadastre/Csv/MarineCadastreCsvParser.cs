@@ -13,21 +13,25 @@ using Ais.Net.Models.Abstractions;
 namespace Ais.Net.MarineCadastre.Csv;
 
 /// <summary>
-/// Turns MarineCadastre CSV records into Ais.Net.Models messages. The header line fixes the column
-/// positions; every later line yields a position report and, when the vessel's static columns are new
-/// or changed, a static-data message as well.
+/// Converts MarineCadastre CSV records into Ais.Net.Models messages. The header line fixes the column
+/// positions. Each subsequent line gives a position report. If the static columns of the vessel are new
+/// or changed, the line also gives a static-data message.
 /// </summary>
 /// <remarks>
 /// <para>
-/// A CSV row is a denormalised join of a position report with the vessel's static data, so a row maps
-/// to a Class A message type 1 (or 2 or 3) or a Class B message type 18, with the static columns
-/// becoming a message type 5 for Class A. For Class B the name has no home in message type 24 part 0 as
-/// modelled, so on a static change the row's position is emitted as a message type 19, which carries
-/// the name, ship type and dimensions, followed by a message type 24 part 1 for the call sign.
+/// A CSV row is a denormalised join of a position report and the static data of the vessel. Thus a row
+/// maps to a Class A message type 1 (or 2 or 3) or to a Class B message type 18. For Class A, the
+/// static columns become a message type 5.
 /// </para>
 /// <para>
-/// Fields a real AIS message carries but the CSV does not (rate of turn, RAIM, radio status, ETA,
-/// destination and so on) are set to the AIS "not available" value for that field.
+/// For Class B, the model of message type 24 part 0 has no field for the name. Thus, on a static
+/// change, the parser returns the position of the row as a message type 19. That message carries the
+/// name, the ship type and the dimensions. A message type 24 part 1 follows it with the call sign.
+/// </para>
+/// <para>
+/// A real AIS message has fields that the CSV does not have (rate of turn, RAIM, radio status, ETA,
+/// destination and more). The parser sets each of these fields to the AIS "not available" value for
+/// that field.
 /// </para>
 /// </remarks>
 internal sealed class MarineCadastreCsvParser(MarineCadastreCsvReaderOptions options)
@@ -162,10 +166,11 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreCsvReaderOptions opt
 
     /// <summary>
     /// Parses a decimal number. MarineCadastre writes plain fixed-point values ("-122.50573", "0.0",
-    /// "14"), which take a fast path: the digits are accumulated as an integer and divided once by a
-    /// power of ten. With at most 15 significant digits the integer is below 2^53 and the power of ten
-    /// up to 10^22 is exact, so that single division is correctly rounded (Clinger's fast path) and the
-    /// result is bit-identical to <see cref="Utf8Parser"/>, which handles everything else.
+    /// "14"). These take a fast path: the parser accumulates the digits as an integer and divides one
+    /// time by a power of ten. With a maximum of 15 significant digits, the integer is below 2^53, and
+    /// the power of ten up to 10^22 is exact. Thus that one division is correctly rounded (Clinger's
+    /// fast path). The result is bit-identical to <see cref="Utf8Parser"/>, which handles all the other
+    /// cases.
     /// </summary>
     internal static bool TryParseDouble(ReadOnlySpan<byte> bytes, out double value)
     {
@@ -383,8 +388,8 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreCsvReaderOptions opt
     }
 
     /// <summary>
-    /// Hashes the static columns of the row and compares against the last value seen for the MMSI, so
-    /// a vessel's static data is emitted once rather than on every one of its position rows.
+    /// Hashes the static columns of the row and compares the hash with the last value for the MMSI.
+    /// Thus the parser returns the static data of a vessel one time, not on each of its position rows.
     /// </summary>
     private bool IsNewStaticData(ReadOnlySpan<byte> line, ReadOnlySpan<CsvField> fields, int fieldCount, uint mmsi)
     {

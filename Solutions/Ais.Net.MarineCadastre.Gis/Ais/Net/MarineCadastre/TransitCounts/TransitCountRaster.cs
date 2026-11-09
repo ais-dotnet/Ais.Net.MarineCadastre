@@ -10,21 +10,21 @@ using Ais.Net.Models.Abstractions;
 namespace Ais.Net.MarineCadastre.TransitCounts;
 
 /// <summary>
-/// An open MarineCadastre AIS Vessel Transit Counts raster: a GeoTIFF whose cells count how many vessel
-/// transits crossed each 100 m square in a year. Offers point lookups, and the cells or tiles that hold
-/// data as pull sequences or cold observables.
+/// An open MarineCadastre AIS Vessel Transit Counts raster. It is a GeoTIFF whose cells count the
+/// vessel transits that crossed each 100 m square in a year. It offers point lookups. It also offers
+/// the cells or tiles that hold data, as pull sequences or as cold observables.
 /// </summary>
 /// <remarks>
 /// <para>
-/// The file stays open until the raster is disposed; reads go through one shared handle, so several
-/// subscriptions may run at once. Each read decodes one tile at a time, so memory use is a few
-/// megabytes however large the raster is. Tiles that hold no data are detected without decoding once
-/// one has been seen, because identical input compresses to identical bytes.
+/// The file stays open until you dispose the raster. Reads go through one shared handle, so several
+/// subscriptions can run at the same time. Each read decodes one tile at a time. Thus memory use is a
+/// few megabytes for a raster of any size. After the reader sees one tile with no data, it finds the
+/// other such tiles without a decode. This works because identical input compresses to identical bytes.
 /// </para>
 /// <para>
-/// Cells are squares in the raster's own coordinate system. MarineCadastre uses Web Mercator, whose
-/// metres shrink with latitude, so a 100 m cell at 47°N is about 68 m across on the water and counts
-/// are not per equal area.
+/// Cells are squares in the coordinate system of the raster. MarineCadastre uses Web Mercator, whose
+/// metres become smaller with latitude. Thus a 100 m cell at 47°N is approximately 68 m across on the
+/// water, and the counts are not for equal areas.
 /// </para>
 /// </remarks>
 public sealed class TransitCountRaster : IDisposable
@@ -47,40 +47,41 @@ public sealed class TransitCountRaster : IDisposable
     }
 
     /// <summary>
-    /// Gets the path the raster was opened from.
+    /// Gets the path of the file of the raster.
     /// </summary>
     public string Path { get; }
 
     /// <summary>
-    /// Gets the geographic box the raster covers.
+    /// Gets the geographic box that the raster covers.
     /// </summary>
     public BoundingBox Extent { get; }
 
     /// <summary>
-    /// Gets the number of resolution levels: the full-resolution grid plus its overviews.
+    /// Gets the number of resolution levels: the full-resolution grid and its overviews.
     /// </summary>
     public int LevelCount => this.file.Levels.Count;
 
     /// <summary>
-    /// Gets a value indicating whether cells are in projected metres (Web Mercator) rather than degrees.
+    /// Gets a value that is <see langword="true"/> if the cells are in projected metres (Web Mercator),
+    /// and <see langword="false"/> if they are in degrees.
     /// </summary>
     public bool IsProjected => this.file.Georeference.Projection == RasterProjection.WebMercator;
 
     /// <summary>
-    /// Gets the value that marks a cell without data, or <see langword="null"/> when the file declares none.
+    /// Gets the value that marks a cell without data, or <see langword="null"/> if the file declares none.
     /// </summary>
     public uint? NoData { get; }
 
     /// <summary>
-    /// Gets the band statistics stored in the file, or <see langword="null"/> when it has none.
+    /// Gets the band statistics that the file stores, or <see langword="null"/> if it has none.
     /// </summary>
     public TransitCountStatistics? Statistics { get; }
 
     /// <summary>
     /// Gets the grid size at a level.
     /// </summary>
-    /// <param name="level">The level; 0 is full resolution.</param>
-    /// <returns>Columns and rows.</returns>
+    /// <param name="level">The level. 0 is full resolution.</param>
+    /// <returns>The columns and the rows.</returns>
     public (int Columns, int Rows) Dimensions(int level = 0)
     {
         RasterLevel raster = this.Level(level);
@@ -88,10 +89,11 @@ public sealed class TransitCountRaster : IDisposable
     }
 
     /// <summary>
-    /// Gets the size of a cell at a level, in the raster's units: metres when <see cref="IsProjected"/>, else degrees.
+    /// Gets the size of a cell at a level, in the units of the raster: metres if <see cref="IsProjected"/>,
+    /// or degrees if not.
     /// </summary>
-    /// <param name="level">The level; 0 is full resolution.</param>
-    /// <returns>Cell width and height.</returns>
+    /// <param name="level">The level. 0 is full resolution.</param>
+    /// <returns>The cell width and the cell height.</returns>
     public (double Width, double Height) CellSize(int level = 0)
     {
         RasterLevel raster = this.Level(level);
@@ -99,12 +101,12 @@ public sealed class TransitCountRaster : IDisposable
     }
 
     /// <summary>
-    /// Looks up the count of the cell under a position. Reads one tile, which is cached for the next
-    /// lookup in the same tile.
+    /// Gets the count of the cell under a position. The raster reads one tile and caches it for the
+    /// next lookup in the same tile.
     /// </summary>
     /// <param name="position">The position.</param>
-    /// <param name="level">The level; 0 is full resolution.</param>
-    /// <returns>The count; 0 for a NoData cell or a position outside the raster.</returns>
+    /// <param name="level">The level. 0 is full resolution.</param>
+    /// <returns>The count. It is 0 for a NoData cell or for a position outside the raster.</returns>
     public uint CountAt(Position position, int level = 0)
     {
         RasterLevel raster = this.Level(level);
@@ -147,7 +149,7 @@ public sealed class TransitCountRaster : IDisposable
     /// <summary>
     /// Reads the cells that hold data, tile by tile from north-west to south-east.
     /// </summary>
-    /// <param name="options">Filters; <see cref="TransitCountReaderOptions.Default"/> when omitted.</param>
+    /// <param name="options">The filters. If you do not give options, the raster uses <see cref="TransitCountReaderOptions.Default"/>.</param>
     /// <returns>The cells.</returns>
     public IEnumerable<TransitCell> Read(TransitCountReaderOptions? options = null) =>
         this.ReadCells(options ?? TransitCountReaderOptions.Default, CancellationToken.None);
@@ -155,16 +157,16 @@ public sealed class TransitCountRaster : IDisposable
     /// <summary>
     /// Reads the tiles that hold data, from north-west to south-east.
     /// </summary>
-    /// <param name="options">Filters; <see cref="TransitCountReaderOptions.Default"/> when omitted.</param>
+    /// <param name="options">The filters. If you do not give options, the raster uses <see cref="TransitCountReaderOptions.Default"/>.</param>
     /// <returns>The tiles.</returns>
     public IEnumerable<TransitTile> ReadTiles(TransitCountReaderOptions? options = null) =>
         this.ReadTilesCore(options ?? TransitCountReaderOptions.Default, CancellationToken.None);
 
     /// <summary>
     /// Streams the cells that hold data. Each subscription reads on a thread-pool thread and completes
-    /// when the last tile is done; disposing the subscription stops the read.
+    /// after the last tile. If you dispose the subscription, the read stops.
     /// </summary>
-    /// <param name="options">Filters; <see cref="TransitCountReaderOptions.Default"/> when omitted.</param>
+    /// <param name="options">The filters. If you do not give options, the raster uses <see cref="TransitCountReaderOptions.Default"/>.</param>
     /// <returns>The cells, tile by tile from north-west to south-east.</returns>
     public IObservable<TransitCell> Observe(TransitCountReaderOptions? options = null)
     {
@@ -183,7 +185,7 @@ public sealed class TransitCountRaster : IDisposable
     /// <summary>
     /// Streams the tiles that hold data, with the same behaviour as <see cref="Observe"/>.
     /// </summary>
-    /// <param name="options">Filters; <see cref="TransitCountReaderOptions.Default"/> when omitted.</param>
+    /// <param name="options">The filters. If you do not give options, the raster uses <see cref="TransitCountReaderOptions.Default"/>.</param>
     /// <returns>The tiles, from north-west to south-east.</returns>
     public IObservable<TransitTile> ObserveTiles(TransitCountReaderOptions? options = null)
     {

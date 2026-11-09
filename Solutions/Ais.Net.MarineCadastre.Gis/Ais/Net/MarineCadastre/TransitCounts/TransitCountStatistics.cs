@@ -8,21 +8,21 @@ using System.Xml.Linq;
 namespace Ais.Net.MarineCadastre.TransitCounts;
 
 /// <summary>
-/// Band statistics the producing tool stored in the raster, covering the cells that hold data. Present
-/// in the MarineCadastre files; absent from rasters written without them.
+/// Band statistics that the tool that made the raster stored in it. They cover the cells that hold
+/// data. The MarineCadastre files have them. Rasters from other tools can have none.
 /// </summary>
-/// <param name="Count">How many cells hold data, or <see langword="null"/> when not recorded.</param>
+/// <param name="Count">The number of cells that hold data, or <see langword="null"/> if the file does not record it.</param>
 /// <param name="Minimum">The smallest count.</param>
 /// <param name="Maximum">The largest count.</param>
-/// <param name="Mean">The mean count over cells with data.</param>
-/// <param name="StandardDeviation">The standard deviation of counts over cells with data.</param>
+/// <param name="Mean">The mean count over the cells with data.</param>
+/// <param name="StandardDeviation">The standard deviation of the counts over the cells with data.</param>
 public sealed record TransitCountStatistics(long? Count, double Minimum, double Maximum, double Mean, double StandardDeviation)
 {
     /// <summary>
-    /// Reads the statistics from GDAL's metadata XML, when it has them.
+    /// Reads the statistics from the GDAL metadata XML, if it has them.
     /// </summary>
-    /// <param name="gdalMetadata">The <c>GDAL_METADATA</c> tag text.</param>
-    /// <returns>The statistics, or <see langword="null"/> when the minimum and maximum are not recorded.</returns>
+    /// <param name="gdalMetadata">The text of the <c>GDAL_METADATA</c> tag.</param>
+    /// <returns>The statistics, or <see langword="null"/> if the metadata does not record the minimum and the maximum.</returns>
     internal static TransitCountStatistics? Parse(string? gdalMetadata)
     {
         if (string.IsNullOrWhiteSpace(gdalMetadata))

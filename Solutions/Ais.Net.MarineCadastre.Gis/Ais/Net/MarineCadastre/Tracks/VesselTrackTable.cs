@@ -21,10 +21,10 @@ namespace Ais.Net.MarineCadastre.Tracks;
 /// </summary>
 /// <remarks>
 /// Discovery uses Microsoft.Data.Sqlite. The row loop steps a prepared statement through the
-/// SQLitePCLRaw API underneath it instead, because that hands back each column as a span over SQLite's
-/// own memory: no copy of the geometry blob, no string for the timestamps, and none of the per-column
-/// type negotiation of the ADO.NET layer, which together cost more than SQLite's own work on a file of
-/// a million rows.
+/// SQLitePCLRaw API that is below it. That API returns each column as a span over the memory of
+/// SQLite. Thus there is no copy of the geometry blob and no string for the timestamps. There is also
+/// none of the per-column type negotiation of the ADO.NET layer. On a file of a million rows, those
+/// costs together are more than the work of SQLite.
 /// </remarks>
 internal sealed class VesselTrackTable
 {

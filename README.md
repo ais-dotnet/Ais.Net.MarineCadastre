@@ -7,6 +7,8 @@ Readers for the archived AIS data that [MarineCadastre.gov](https://hub.marineca
   - the monthly AIS Vessel Tracks GeoPackage, as an `IObservable<VesselTrack>`. A track is one vessel's path over part of a day, with its static data. See [Vessel tracks](#vessel-tracks).
   - the yearly AIS Vessel Transit Counts GeoTIFF, as an `IObservable` of cells or tiles, with point lookups. See [Transit counts](#transit-counts).
 
+Both packages target .NET 10. Ais.Net.MarineCadastre depends only on Ais.Net.Models. Ais.Net.MarineCadastre.Gis also depends on Microsoft.Data.Sqlite and System.Reactive.
+
 Each product has its own namespace: `Ais.Net.MarineCadastre.Csv`, `Ais.Net.MarineCadastre.Tracks` and `Ais.Net.MarineCadastre.TransitCounts`. Each holds that product's reader, its options and the types it produces. The root `Ais.Net.MarineCadastre` namespace holds the types they share, `BoundingBox` and `ShipTypeSource`. These live in the Ais.Net.MarineCadastre package, which Ais.Net.MarineCadastre.Gis depends on.
 
 `BoundingBox` checks its values when you construct it. Latitudes must be between -90 and 90 degrees, longitudes between -180 and 180 degrees, and none may be NaN. `West` must not exceed `East`, and `South` must not exceed `North`. So a box with latitude and longitude swapped throws an exception instead of silently matching nothing. Its properties are get-only, so a `with` expression cannot bypass these checks.
@@ -20,7 +22,7 @@ using Ais.Net.MarineCadastre.Csv;
 using Ais.Net.Models;
 using Ais.Net.Models.Abstractions;
 
-foreach (AisMessageBase message in MarineCadastreCsvReader.ReadFile("AIS_2026_01_01.csv"))
+foreach (AisMessageBase message in MarineCadastreCsvReader.ReadFile("ais-2026-01-01.csv"))
 {
     if (message is IVesselNavigation { Position: { } position })
     {
@@ -30,6 +32,8 @@ foreach (AisMessageBase message in MarineCadastreCsvReader.ReadFile("AIS_2026_01
 ```
 
 `ReadAsync` and `ReadFileAsync` return an `IAsyncEnumerable<AisMessageBase>`. Every message's `Timestamp` is the row's `base_date_time`, as UTC.
+
+NOAA publishes the 2026 daily files Zstandard-compressed, as `.csv.zst`. The reader does not decompress them, but `Read` and `ReadAsync` accept any `Stream`, so you can pass a decompressing stream instead of unpacking the file first. The benchmarks do this with the `DecompressionStream` from [ZstdSharp.Port](https://www.nuget.org/packages/ZstdSharp.Port).
 
 ### What a row becomes
 
@@ -59,6 +63,9 @@ The reader skips a data row that it cannot parse and continues with the next row
 To see the skipped rows, set `OnRowSkipped` on the options. The callback gets a `SkippedCsvRow` with the 1-based physical line number (the header is line 1), a `CsvRowSkipReason` and the raw UTF-8 bytes of the line. The bytes are valid only during the call, so copy what you need. The callback runs on the reading thread before the next row is read. If it throws, the read ends with that exception, so throwing makes the read strict:
 
 ```csharp
+using System.Text;
+using Ais.Net.MarineCadastre.Csv;
+
 MarineCadastreCsvReaderOptions options = new()
 {
     OnRowSkipped = row => Console.Error.WriteLine(
@@ -90,10 +97,10 @@ Measured on the 1 January 2026 daily file (828 MiB, 8.5 million rows) on a deskt
 
 The `OnRowSkipped` callback adds no cost to rows that parse, and it allocates nothing per skipped row.
 
-`Solutions/Ais.Net.MarineCadastre.Benchmarks` measures each layer: line splitting, field splitting, positions only, with static data, and async. The repository holds no MarineCadastre data. On first run the CSV benchmarks download the start of the 1 January 2026 daily file from NOAA (about 2 MB of the 239 MB `.csv.zst`, stopping after 10,000 rows) and cache it under your local application data folder, in `Ais.Net.MarineCadastre/samples`. To measure a whole day instead, point `AIS_NET_MARINECADASTRE_CSV` at a daily file:
+`Solutions/Ais.Net.MarineCadastre.Benchmarks` measures each layer: line splitting, field splitting, positions only, with static data, and async with static data. The repository holds no MarineCadastre data. On first run the CSV benchmarks download the start of the 1 January 2026 daily file from NOAA (about 2 MB of the 239 MB `.csv.zst`, stopping after 10,000 rows) and cache it under your local application data folder, in `Ais.Net.MarineCadastre/samples`. To measure a whole day instead, point `AIS_NET_MARINECADASTRE_CSV` at a daily file:
 
 ```powershell
-$env:AIS_NET_MARINECADASTRE_CSV = "D:\data\AIS_2026_01_01.csv"
+$env:AIS_NET_MARINECADASTRE_CSV = "D:\data\ais-2026-01-01.csv"
 dotnet run -c Release --project Solutions/Ais.Net.MarineCadastre.Benchmarks -- --filter *
 ```
 
@@ -145,7 +152,7 @@ The filters in `VesselTrackReaderOptions` are optional and combine:
 - `From` and `To` keep tracks that overlap the window.
 - `Mmsi` keeps one vessel.
 
-The reader finds the feature table and geometry column from the GeoPackage's own registry, so a file for any month works. Attribute columns match by name, ignoring case and underscores.
+The reader finds the feature table and geometry column from the GeoPackage's own registry, so a file for any month works. By default it reads the first features table in `gpkg_contents`, in name order. That is the right table for MarineCadastre's files, because each holds one month in one table. To read a different table, set `TableName`. Attribute columns match by name, ignoring case and underscores.
 
 ### Performance
 
@@ -216,7 +223,7 @@ The static `MarineCadastreTransitCountReader.Observe(path)` opens and closes the
 - `Level`: 0 is the exact 100 m grid. Each overview level doubles the cell size, resampled by whatever tool built the file.
 - `MinimumTransits`: the smallest count a cell must have to be returned.
 
-The raster also exposes `Extent`, `Dimensions`, `CellSize`, `NoData` and the band `Statistics` that GDAL stored in the file. Once the reader has seen one tile with no data, it skips other such tiles without decoding them, because identical content compresses to identical bytes.
+The raster also exposes `Extent`, `LevelCount`, `Dimensions`, `CellSize`, `NoData` and the band `Statistics` that GDAL stored in the file. `CellSize` is in metres when `IsProjected` is true (Web Mercator), and in degrees otherwise. Once the reader has seen one tile with no data, it skips other such tiles without decoding them, because identical content compresses to identical bytes.
 
 ### Caveats
 
@@ -252,6 +259,28 @@ The whole-file read allocates about 1 MiB in total and peaks at 45 MiB of workin
 
 Most of the time goes to decoding the LZW tiles. The decoder keeps its code table as offsets into the output it has already produced, so each code is one block copy. That suits a raster where most codes stand for long runs of NoData. The cell scan skips NoData runs with a vectorised search and converts each row's latitude once, so it adds a few seconds over the tile read instead of ten. Because LZW is sequential, a point lookup decodes a tile only as far as the cell it needs.
 
+By default, the transit-count benchmarks run over a generated 2048 × 2048 raster with the real file's density: about 2% of cells hold data. To measure a real file, set `AIS_NET_MARINECADASTRE_TIF`. The 2025 file has 7,643 non-empty tiles, so use `--job short`:
+
+```powershell
+$env:AIS_NET_MARINECADASTRE_TIF = "D:\data\ais-transit-count-2025.tif"
+dotnet run -c Release --project Solutions/Ais.Net.MarineCadastre.Benchmarks -- --filter *TransitCount* --job short
+```
+
+## Building and testing
+
+You need the .NET 10 SDK. `global.json` asks for 10.0.403 or a later 10.x release. To build and run the tests:
+
+```powershell
+dotnet build Solutions/Ais.Net.MarineCadastre.slnx
+dotnet test --solution Solutions/Ais.Net.MarineCadastre.slnx
+```
+
+The tests use MSTest on Microsoft.Testing.Platform. They need no MarineCadastre data: `Solutions/Ais.Net.MarineCadastre.Tests/TestSupport` generates the GeoPackage and GeoTIFF fixtures, and the CSV rows are synthetic.
+
+`build.ps1` runs the ZeroFailed build process that CI runs on GitHub Actions (`.github/workflows/build.yml`). It needs PowerShell 7.
+
+Both libraries use Microsoft.CodeAnalysis.PublicApiAnalyzers and treat warnings as errors. A change to the public API therefore fails the build until you record it in that project's `PublicAPI.Unshipped.txt`.
+
 ## Licenses
 
 Ais.Net.MarineCadastre is available under the Apache 2.0 open source license.
@@ -260,4 +289,36 @@ The MarineCadastre data is produced by the US Coast Guard Navigation Center and 
 
 ## Project Sponsor
 
-This project is sponsored by [endjin](https://endjin.com), a UK based Technology Consultancy which specializes in Data & Analytics, AI & Cloud Native App Dev, and is a [.NET Foundation Corporate Sponsor](https://dotnetfoundation.org/membership/corporate-sponsorship).
+This project is sponsored by [endjin](https://endjin.com), a UK based Technology Consultancy which specializes in Data & Analytics, AI & Cloud Native App Dev.
+
+> We help small teams achieve big things.
+
+We produce three free weekly newsletters:
+
+ - [Azure Weekly](https://azureweekly.info) for all things about the Microsoft Azure Platform
+ - [Power BI Weekly](https://powerbiweekly.info) for all things Power BI
+ - [Fabric Weekly](https://fabricweekly.info) for all things Microsoft Fabric
+
+Keep up with everything that's going on at endjin via our [blog](https://endjin.com/blog), follow us on [Twitter](https://twitter.com/endjin), [YouTube](https://www.youtube.com/c/endjin) or [LinkedIn](https://www.linkedin.com/company/endjin).
+
+We have become the maintainers of a number of popular .NET Open Source Projects:
+
+- [Reactive Extensions for .NET](https://github.com/dotnet/reactive)
+- [Reaqtor](https://github.com/reaqtive)
+- [Argotic Syndication Framework](https://github.com/argotic-syndication-framework/)
+
+And we have over 50 Open Source projects of our own, spread across the following GitHub Orgs:
+
+- [endjin](https://github.com/endjin/)
+- [Corvus](https://github.com/corvus-dotnet)
+- [Menes](https://github.com/menes-dotnet)
+- [Marain](https://github.com/marain-dotnet)
+- [AIS.NET](https://github.com/ais-dotnet)
+
+And the DevOps tooling we have created for managing all these projects is available on the [PowerShell Gallery](https://www.powershellgallery.com/profiles/endjin).
+
+For more information about our products and services, or for commercial support of this project, please [contact us](https://endjin.com/contact-us).
+
+## Code of conduct
+
+This project has adopted a code of conduct adapted from the [Contributor Covenant](http://contributor-covenant.org/) to clarify expected behaviour in our community. This code of conduct has been [adopted by many other projects](http://contributor-covenant.org/adopters/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [&#104;&#101;&#108;&#108;&#111;&#064;&#101;&#110;&#100;&#106;&#105;&#110;&#046;&#099;&#111;&#109;](&#109;&#097;&#105;&#108;&#116;&#111;:&#104;&#101;&#108;&#108;&#111;&#064;&#101;&#110;&#100;&#106;&#105;&#110;&#046;&#099;&#111;&#109;) with any additional questions or comments.
