@@ -9,7 +9,7 @@
   </ItemGroup>
 
   <ItemGroup Label="Ais.Net.MarineCadastre">
-    <PackageVersion Include="Ais.Net.Models" Version="1.1.0" />
+    <PackageVersion Include="Ais.Net.Models" Version="1.0.5" />
   </ItemGroup>
 
   <ItemGroup Label="Ais.Net.MarineCadastre.Gis">
