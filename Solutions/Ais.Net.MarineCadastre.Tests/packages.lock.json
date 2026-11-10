@@ -181,14 +181,14 @@
       "ais.net.marinecadastre": {
         "type": "Project",
         "dependencies": {
-          "Ais.Net.Models": "[1.1.0, )"
+          "Ais.Net.Models": "[1.0.5, )"
         }
       },
       "ais.net.marinecadastre.gis": {
         "type": "Project",
         "dependencies": {
           "Ais.Net.MarineCadastre": "[1.0.0, )",
-          "Ais.Net.Models": "[1.1.0, )",
+          "Ais.Net.Models": "[1.0.5, )",
           "Microsoft.Data.Sqlite": "[10.0.14, )",
           "SQLitePCLRaw.core": "[2.1.13, )",
           "System.Reactive": "[7.0.0, )"
@@ -196,9 +196,9 @@
       },
       "Ais.Net.Models": {
         "type": "CentralTransitive",
-        "requested": "[1.1.0, )",
-        "resolved": "1.1.0",
-        "contentHash": "APkv0UIFXhiaFlV48Dzo+LLnS5pYSBnxRebG7xxhBnQcqKNkE1PtldnoOuZyUbUWvaoXXaCQ3o7TtS9VdJzcPA==",
+        "requested": "[1.0.5, )",
+        "resolved": "1.0.5",
+        "contentHash": "hLGOKELCcdDVOPUO9Oe1ZcxJVZk4DILnhjJ+SI885NYUESxnh2WRZDt6e8VmhnC9F3K5xZsplJfSu7Ki6rI+dA==",
         "dependencies": {
           "Ais.Net": "0.4.2"
         }
