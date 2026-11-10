@@ -115,7 +115,9 @@ public sealed class TransitCountRaster : IDisposable
         (double x, double y) = this.file.Georeference.ToModel(position);
         double column = Math.Floor((x - this.file.Georeference.OriginX) / cellWidth);
         double row = Math.Floor((this.file.Georeference.OriginY - y) / cellHeight);
-        if (column < 0 || row < 0 || column >= raster.Width || row >= raster.Height)
+        // Written as the negation of "inside" so that a NaN coordinate, for which every comparison is
+        // false, counts as outside.
+        if (!(column >= 0 && row >= 0 && column < raster.Width && row < raster.Height))
         {
             return 0;
         }
