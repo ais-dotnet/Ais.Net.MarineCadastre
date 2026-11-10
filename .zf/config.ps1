@@ -46,8 +46,10 @@ $SolutionToBuild = (Resolve-Path (Join-Path $here "./Solutions/Ais.Net.MarineCad
 $ProjectsToPublish = @()
 $NuSpecFilesToPackage = @()
 $NugetPublishSource = property ZF_NUGET_PUBLISH_SOURCE "$here/_local-nuget-feed"
-$IncludeAssembliesInCodeCoverage = "Ais.Net.MarineCadastre"
-$ExcludeAssembliesInCodeCoverage = ""
+# reportgenerator matches a filter without a wildcard exactly, so the '*' is what brings in
+# Ais.Net.MarineCadastre.Gis. It also matches the test assembly, which is therefore excluded.
+$IncludeAssembliesInCodeCoverage = "Ais.Net.MarineCadastre*"
+$ExcludeAssembliesInCodeCoverage = "Ais.Net.MarineCadastre.Tests"
 
 
 # Customise the build process
