@@ -108,8 +108,30 @@ internal sealed class VesselTrackTable
     /// <param name="requestedTable">The table to read, or <see langword="null"/> to take the first features table in <c>gpkg_contents</c>.</param>
     /// <returns>The table description.</returns>
     /// <exception cref="InvalidDataException">Thrown when the file is not a usable tracks GeoPackage.</exception>
+    /// <exception cref="NotSupportedException">Thrown when the database does not store its text as UTF-8.</exception>
     public static VesselTrackTable Discover(SqliteConnection connection, string? requestedTable)
     {
+        try
+        {
+            return DiscoverCore(connection, requestedTable);
+        }
+        catch (SqliteException ex) when (ex.SqliteErrorCode is raw.SQLITE_NOTADB or raw.SQLITE_CORRUPT or raw.SQLITE_ERROR)
+        {
+            // SQLite reads nothing until the first query, so a file that is not a database fails here
+            // and not in Open. SQLITE_ERROR is a missing registry table: the SQL itself is fixed.
+            throw new InvalidDataException($"The file is not a GeoPackage: {ex.Message}", ex);
+        }
+    }
+
+    private static VesselTrackTable DiscoverCore(SqliteConnection connection, string? requestedTable)
+    {
+        // The row loop reads text columns as the bytes SQLite stores, which are UTF-8 only when that is
+        // the encoding of the database.
+        if (Scalar(connection, "pragma encoding") is string encoding && !encoding.Equals("UTF-8", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new NotSupportedException($"The GeoPackage stores its text as {encoding}. Only UTF-8 is supported.");
+        }
+
         string? tableName = requestedTable ?? Scalar(connection, "select table_name from gpkg_contents where data_type = 'features' order by table_name limit 1") as string;
         if (tableName is null)
         {
@@ -332,17 +354,21 @@ internal sealed class VesselTrackTable
             parameters.Add((long)mmsi);
         }
 
-        // The 'auto' modifier reads ISO text, Unix seconds and Julian days alike, matching ReadTimestamp,
-        // so the pre-filter never discards a row the client-side check would keep.
+        // The 'auto' modifier reads ISO text, Unix seconds and Julian days alike, matching ReadTimestamp.
+        // SQLite gives null for text that it cannot read, which the framework parser in ReadTimestamp
+        // possibly can. Such a row passes the pre-filter, so that the pre-filter never discards a row
+        // that the client-side check would keep.
         if (options.From is { } from)
         {
-            conditions.Add($"datetime(t.{QuoteIdentifier(this.attributeColumns[EndTimeOrdinal - MmsiOrdinal]!)}, 'auto') >= datetime(?)");
+            string endTime = $"datetime(t.{QuoteIdentifier(this.attributeColumns[EndTimeOrdinal - MmsiOrdinal]!)}, 'auto')";
+            conditions.Add($"({endTime} is null or {endTime} >= datetime(?))");
             parameters.Add(from.UtcDateTime.ToString(SqlDateTimeFormat, CultureInfo.InvariantCulture));
         }
 
         if (options.To is { } to)
         {
-            conditions.Add($"datetime(t.{QuoteIdentifier(this.attributeColumns[StartTimeOrdinal - MmsiOrdinal]!)}, 'auto') <= datetime(?)");
+            string startTime = $"datetime(t.{QuoteIdentifier(this.attributeColumns[StartTimeOrdinal - MmsiOrdinal]!)}, 'auto')";
+            conditions.Add($"({startTime} is null or {startTime} <= datetime(?))");
             parameters.Add(to.UtcDateTime.ToString(SqlDateTimeFormat, CultureInfo.InvariantCulture));
         }
 
@@ -470,10 +496,8 @@ internal sealed class VesselTrackTable
                 }
 
             case raw.SQLITE_INTEGER:
-                return DateTimeOffset.FromUnixTimeSeconds(raw.sqlite3_column_int64(statement, ordinal));
-
             case raw.SQLITE_FLOAT:
-                return DateTimeOffset.UnixEpoch.AddSeconds((raw.sqlite3_column_double(statement, ordinal) - 2440587.5) * 86400);
+                return FromNumericTimestamp(raw.sqlite3_column_double(statement, ordinal), id, role);
 
             case raw.SQLITE_NULL:
                 throw new InvalidDataException($"Row {id} has no {role}.");
@@ -483,6 +507,26 @@ internal sealed class VesselTrackTable
         }
     }
 
+    // A number is a Julian day or Unix seconds. The rule that tells them apart is the rule of the SQLite
+    // 'auto' modifier, which the time pre-filter uses: a value in the Julian day range for the years
+    // -4713 to 9999 is a Julian day, and any other value is Unix seconds.
+    private static DateTimeOffset FromNumericTimestamp(double value, long id, string role)
+    {
+        const double JulianDayLimit = 5373484.5;
+        const double JulianDayOfUnixEpoch = 2440587.5;
+
+        double unixSeconds = value is >= 0 and < JulianDayLimit ? (value - JulianDayOfUnixEpoch) * 86400 : value;
+        try
+        {
+            return DateTimeOffset.UnixEpoch.AddSeconds(unixSeconds);
+        }
+        catch (ArgumentException ex)
+        {
+            throw new InvalidDataException($"The {role} of row {id} is outside the supported range: {value.ToString(CultureInfo.InvariantCulture)}.", ex);
+        }
+    }
+
+    // Discover rejects a database that is not UTF-8. Thus
     // sqlite3_column_blob on a TEXT value returns its UTF-8 bytes without conversion or copying, and an
     // empty span for null, which is all a missing text means here.
     private static ReadOnlySpan<byte> ReadText(sqlite3_stmt statement, int ordinal) =>

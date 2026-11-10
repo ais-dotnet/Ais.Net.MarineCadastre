@@ -28,7 +28,9 @@ namespace Ais.Net.MarineCadastre.Tracks;
 /// <para>
 /// A row whose geometry is <see langword="null"/> or has no positions is not a track. The reader skips
 /// it without a report. A row with a coordinate that is NaN or outside the WGS84 range, or with no
-/// MMSI or time, causes an <see cref="InvalidDataException"/>.
+/// MMSI or time, causes an <see cref="InvalidDataException"/>. So does a file that is not a
+/// GeoPackage. A GeoPackage that does not store its text as UTF-8 causes a
+/// <see cref="NotSupportedException"/>.
 /// </para>
 /// </remarks>
 public static class MarineCadastreTrackReader
