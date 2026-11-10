@@ -50,6 +50,12 @@ internal sealed class GeoTiffFile : IDisposable
     private const int CompressionDeflate = 8;
     private const int CompressionDeflateLegacy = 32946;
 
+    // Limits that no real raster reaches. They turn a corrupt size into a clear error, where the
+    // arithmetic or the allocation that follows would otherwise fail in a less helpful way.
+    private const long MaxTagBytes = 256 * 1024 * 1024;
+    private const long MaxBlockBytes = 1L << 30;
+    private const long MaxBlockCells = 1L << 28;
+
     private readonly SafeFileHandle handle;
 
     private GeoTiffFile(SafeFileHandle handle, bool littleEndian, IReadOnlyList<RasterLevel> levels, RasterGeoreference georeference, double? noData, string? gdalMetadata)
@@ -243,7 +249,7 @@ internal sealed class GeoTiffFile : IDisposable
         {
             Dictionary<int, TiffEntry> entries = ReadDirectory(handle, nextDirectory, littleEndian, bigTiff, out nextDirectory);
 
-            long subfileType = entries.TryGetValue(TagNewSubfileType, out TiffEntry? subfile) ? GetIntegers(handle, subfile, littleEndian)[0] : 0;
+            long subfileType = entries.TryGetValue(TagNewSubfileType, out TiffEntry? subfile) ? GetFirstInteger(handle, subfile, littleEndian) : 0;
             if ((subfileType & 4) != 0)
             {
                 continue; // A transparency mask, not image data.
@@ -317,7 +323,19 @@ internal sealed class GeoTiffFile : IDisposable
 
     private static RasterLevel ReadLevel(SafeFileHandle handle, Dictionary<int, TiffEntry> entries, bool littleEndian)
     {
-        long Integer(int tag, long fallback) => entries.TryGetValue(tag, out TiffEntry? entry) ? GetIntegers(handle, entry, littleEndian)[0] : fallback;
+        long Integer(int tag, long fallback) => entries.TryGetValue(tag, out TiffEntry? entry) ? GetFirstInteger(handle, entry, littleEndian) : fallback;
+
+        int Int32(int tag, long fallback)
+        {
+            long value = Integer(tag, fallback);
+            return value is >= int.MinValue and <= int.MaxValue
+                ? (int)value
+                : throw new InvalidDataException($"TIFF tag {tag} has the implausible value {value}.");
+        }
+
+        long[] Required(int tag, string name) => entries.TryGetValue(tag, out TiffEntry? entry)
+            ? GetIntegers(handle, entry, littleEndian)
+            : throw new InvalidDataException($"A TIFF directory has no {name} tag.");
 
         long samplesPerPixel = Integer(TagSamplesPerPixel, 1);
         long planar = Integer(TagPlanarConfiguration, 1);
@@ -326,21 +344,21 @@ internal sealed class GeoTiffFile : IDisposable
             throw new NotSupportedException("Only single-band rasters are supported.");
         }
 
-        int bitsPerSample = (int)Integer(TagBitsPerSample, 1);
-        int sampleFormat = (int)Integer(TagSampleFormat, 1);
+        int bitsPerSample = Int32(TagBitsPerSample, 1);
+        int sampleFormat = Int32(TagSampleFormat, 1);
         if (bitsPerSample is not (8 or 16 or 32) || sampleFormat is not (1 or 2))
         {
             throw new NotSupportedException($"Only 8, 16 and 32-bit integer samples are supported, not {bitsPerSample}-bit sample format {sampleFormat}.");
         }
 
-        int predictor = (int)Integer(TagPredictor, 1);
+        int predictor = Int32(TagPredictor, 1);
         if (predictor is not (1 or 2))
         {
             throw new NotSupportedException($"TIFF predictor {predictor} is not supported; only none (1) and horizontal differencing (2) are.");
         }
 
-        int width = checked((int)Integer(TagImageWidth, 0));
-        int height = checked((int)Integer(TagImageLength, 0));
+        int width = Int32(TagImageWidth, 0);
+        int height = Int32(TagImageLength, 0);
         if (width <= 0 || height <= 0)
         {
             throw new InvalidDataException("A TIFF directory has no image size.");
@@ -353,10 +371,10 @@ internal sealed class GeoTiffFile : IDisposable
         long[] byteCounts;
         if (tiled)
         {
-            blockWidth = (int)Integer(TagTileWidth, 0);
-            blockHeight = (int)Integer(TagTileLength, 0);
-            offsets = GetIntegers(handle, entries[TagTileOffsets], littleEndian);
-            byteCounts = GetIntegers(handle, entries[TagTileByteCounts], littleEndian);
+            blockWidth = Int32(TagTileWidth, 0);
+            blockHeight = Int32(TagTileLength, 0);
+            offsets = Required(TagTileOffsets, "TileOffsets");
+            byteCounts = Required(TagTileByteCounts, "TileByteCounts");
         }
         else
         {
@@ -367,13 +385,26 @@ internal sealed class GeoTiffFile : IDisposable
 
             blockWidth = width;
             blockHeight = (int)Math.Min(Integer(TagRowsPerStrip, height), height);
-            offsets = GetIntegers(handle, entries[TagStripOffsets], littleEndian);
-            byteCounts = GetIntegers(handle, entries[TagStripByteCounts], littleEndian);
+            offsets = Required(TagStripOffsets, "StripOffsets");
+            byteCounts = Required(TagStripByteCounts, "StripByteCounts");
         }
 
         if (blockWidth <= 0 || blockHeight <= 0 || offsets.Length != byteCounts.Length)
         {
             throw new InvalidDataException("A TIFF directory has an inconsistent block layout.");
+        }
+
+        if ((long)blockWidth * blockHeight > MaxBlockCells)
+        {
+            throw new NotSupportedException($"The raster stores blocks of {blockWidth} × {blockHeight} cells, which are too large to decode in memory.");
+        }
+
+        for (int i = 0; i < offsets.Length; i++)
+        {
+            if (offsets[i] < 0 || byteCounts[i] is < 0 or > MaxBlockBytes)
+            {
+                throw new InvalidDataException("A TIFF directory has a block with an implausible offset or size.");
+            }
         }
 
         RasterLevel level = new()
@@ -383,7 +414,7 @@ internal sealed class GeoTiffFile : IDisposable
             BlockWidth = blockWidth,
             BlockHeight = blockHeight,
             Tiled = tiled,
-            Compression = (int)Integer(TagCompression, CompressionNone),
+            Compression = Int32(TagCompression, CompressionNone),
             Predictor = predictor,
             BitsPerSample = bitsPerSample,
             SampleFormat = sampleFormat,
@@ -402,6 +433,11 @@ internal sealed class GeoTiffFile : IDisposable
     private static RasterGeoreference ReadGeoreference(SafeFileHandle handle, Dictionary<int, TiffEntry> entries, bool littleEndian)
     {
         long[] keys = GetIntegers(handle, entries[TagGeoKeyDirectory], littleEndian);
+        if (keys.Length < 4)
+        {
+            throw new InvalidDataException("The GeoTIFF key directory is malformed.");
+        }
+
         string ascii = entries.TryGetValue(TagGeoAsciiParams, out TiffEntry? asciiEntry) ? GetAscii(handle, asciiEntry) : string.Empty;
 
         int modelType = 0;
@@ -509,6 +545,12 @@ internal sealed class GeoTiffFile : IDisposable
         || citation.Contains("Mercator_Auxiliary_Sphere", StringComparison.OrdinalIgnoreCase)
         || citation.Contains("3857", StringComparison.Ordinal);
 
+    private static long GetFirstInteger(SafeFileHandle handle, TiffEntry entry, bool littleEndian)
+    {
+        long[] values = GetIntegers(handle, entry, littleEndian);
+        return values.Length > 0 ? values[0] : throw new InvalidDataException("A TIFF tag has no value.");
+    }
+
     private static long[] GetIntegers(SafeFileHandle handle, TiffEntry entry, bool littleEndian)
     {
         int size = entry.Type switch
@@ -567,15 +609,16 @@ internal sealed class GeoTiffFile : IDisposable
 
     private static byte[] GetBytes(SafeFileHandle handle, TiffEntry entry, int itemSize)
     {
+        // Checked before the multiplication, which a corrupt count could overflow.
+        if (entry.Count < 0 || entry.Count > MaxTagBytes / itemSize)
+        {
+            throw new InvalidDataException("A TIFF tag is implausibly large.");
+        }
+
         long length = entry.Count * itemSize;
         if (length <= entry.Inline.Length)
         {
             return entry.Inline[..(int)length];
-        }
-
-        if (length > 256 * 1024 * 1024)
-        {
-            throw new InvalidDataException("A TIFF tag is implausibly large.");
         }
 
         byte[] data = new byte[length];

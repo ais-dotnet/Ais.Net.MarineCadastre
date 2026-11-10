@@ -26,7 +26,12 @@ public static class MarineCadastreTransitCountReader
     /// <returns>The open raster.</returns>
     /// <exception cref="FileNotFoundException">This exception occurs if the file does not exist.</exception>
     /// <exception cref="InvalidDataException">This exception occurs if the file is not a GeoTIFF that this reader can place on the Earth.</exception>
-    /// <exception cref="NotSupportedException">This exception occurs if the file uses a coordinate system, a compression or a sample type that the reader does not support.</exception>
+    /// <exception cref="NotSupportedException">
+    /// This exception occurs if the file uses a coordinate system, a predictor or a sample type that the
+    /// reader does not support. The reader does not examine the compression here, because each level can
+    /// have a different one. An unsupported compression causes this exception when you read a cell or a
+    /// tile of that level.
+    /// </exception>
     public static TransitCountRaster Open(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
