@@ -16,6 +16,9 @@ namespace Ais.Net.MarineCadastre.GeoPackage;
 internal static class GeoPackageGeometry
 {
     private const int HeaderLength = 8;
+
+    // The srs_id every GeoPackage must define for WGS84 longitude and latitude (EPSG:4326).
+    private const int Wgs84SrsId = 4326;
     private const uint LineStringType = 2;
     private const uint MultiLineStringType = 5;
 
@@ -65,18 +68,29 @@ internal static class GeoPackageGeometry
             throw new InvalidDataException("The GeoPackage geometry ends inside its envelope.");
         }
 
+        // Positions are returned as WGS84 degrees, so a geometry in any other coordinate system would be
+        // misread: a Web Mercator point a few metres from the origin passes every range check. The header
+        // carries the id in its own byte order (bit 0 of the flags), which need not be that of the WKB.
+        int srsId = (flags & 1) != 0
+            ? BinaryPrimitives.ReadInt32LittleEndian(blob[4..])
+            : BinaryPrimitives.ReadInt32BigEndian(blob[4..]);
+        if (srsId != Wgs84SrsId)
+        {
+            throw new InvalidDataException($"The geometry uses spatial reference system {srsId}. Only WGS84 (srs_id {Wgs84SrsId}) is supported.");
+        }
+
         ReadOnlySpan<byte> wkb = blob[(HeaderLength + envelopeLength)..];
 
         int offset = 0;
         int count = 0;
-        Walk(wkb, ref offset, Span<Position>.Empty, ref count, countOnly: true);
+        Walk(wkb, ref offset, Span<Position>.Empty, ref count, countOnly: true, insideMulti: false);
 
         // Every element is assigned by the fill pass, so skip the zeroing: on a month of tracks that is
         // 3.5 GB of memory the runtime would otherwise clear first.
         Position[] points = GC.AllocateUninitializedArray<Position>(count);
         offset = 0;
         int written = 0;
-        Walk(wkb, ref offset, points, ref written, countOnly: false);
+        Walk(wkb, ref offset, points, ref written, countOnly: false, insideMulti: false);
 
         try
         {
@@ -90,7 +104,7 @@ internal static class GeoPackageGeometry
         return points;
     }
 
-    private static void Walk(ReadOnlySpan<byte> wkb, ref int offset, Span<Position> target, ref int written, bool countOnly)
+    private static void Walk(ReadOnlySpan<byte> wkb, ref int offset, Span<Position> target, ref int written, bool countOnly, bool insideMulti)
     {
         Require(wkb, offset, 5);
         bool littleEndian = wkb[offset] == 1;
@@ -157,12 +171,20 @@ internal static class GeoPackageGeometry
 
             case MultiLineStringType:
                 {
+                    // WKB does not nest MultiLineStrings. Rejecting one here also bounds the recursion at
+                    // one level: each nested level costs only 9 bytes, so a crafted blob could otherwise
+                    // exhaust the stack, which ends the process rather than raising an exception.
+                    if (insideMulti)
+                    {
+                        throw new InvalidDataException("A MultiLineString contains another MultiLineString. Its parts must be LineStrings.");
+                    }
+
                     Require(wkb, offset, 4);
                     int parts = ReadCount(wkb, offset, littleEndian);
                     offset += 4;
                     for (int i = 0; i < parts; i++)
                     {
-                        Walk(wkb, ref offset, target, ref written, countOnly);
+                        Walk(wkb, ref offset, target, ref written, countOnly, insideMulti: true);
                     }
 
                     break;

@@ -142,7 +142,7 @@ A `VesselTrack` has:
 
 It implements the Ais.Net.Models `IVesselIdentity`, `IVesselName`, `ICallSign`, `IShipType` and `IVesselNavigationStatus` interfaces. Empty columns are `null`, except where an interface needs a value; there, the AIS "not available" value is used.
 
-The positions list is read-only: it cannot be cast back to an array or another mutable collection. If a track's geometry has a coordinate that is NaN or outside the WGS84 range, the reader reports it with an `InvalidDataException`. A row whose geometry is null or has no positions is not a track, so the reader skips it without a report.
+The positions list is read-only: it cannot be cast back to an array or another mutable collection. The reader accepts only geometries in WGS84 (GeoPackage `srs_id` 4326), which is what MarineCadastre publishes. If a track's geometry declares another spatial reference system, or has a coordinate that is NaN or outside the WGS84 range, the reader reports it with an `InvalidDataException`. A row whose geometry is null or has no positions is not a track, so the reader skips it without a report.
 
 ### Filtering
 

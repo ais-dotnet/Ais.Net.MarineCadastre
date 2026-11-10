@@ -148,4 +148,52 @@ public class GeoPackageGeometryTests
 
         Should.Throw<InvalidDataException>(() => GeoPackageGeometry.DecodeLine(blob, out _));
     }
+
+    [TestMethod]
+    [DataRow(3857, false)]
+    [DataRow(3857, true)]
+    [DataRow(0, false)]
+    [DataRow(-1, false)]
+    public void RejectsGeometriesThatAreNotInWgs84(int srsId, bool bigEndian)
+    {
+        // Web Mercator metres near the origin pass every WGS84 range check, so only the header's id
+        // shows that these are not degrees.
+        byte[] blob = GeoPackageGeometryEncoder.Encode([PartA], srsId: srsId, bigEndian: bigEndian);
+
+        Should.Throw<InvalidDataException>(() => GeoPackageGeometry.DecodeLine(blob, out _))
+            .Message.ShouldContain($"spatial reference system {srsId}");
+    }
+
+    [TestMethod]
+    public void ReadsTheSpatialReferenceIdInTheHeaderByteOrderNotThatOfTheWkb()
+    {
+        // A big-endian header in front of little-endian WKB: the two byte orders are independent.
+        byte[] blob = GeoPackageGeometryEncoder.Encode([PartA]);
+        blob[3] = (byte)(blob[3] & ~1);
+        blob.AsSpan(4, 4).Reverse();
+
+        GeoPackageGeometry.DecodeLine(blob, out _).ShouldBe(PartA);
+    }
+
+    [TestMethod]
+    [DataRow(1)]
+    [DataRow(200_000)]
+    public void RejectsAMultiLineStringNestedInsideAnother(int extraLevels)
+    {
+        // Each nested level is 9 bytes. Without the check, the deep case recurses until the stack
+        // overflows, which ends the process rather than failing the test.
+        byte[] inner = GeoPackageGeometryEncoder.Encode([PartA]);
+        byte[] level = [0x01, 0x05, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00];
+        byte[] blob = new byte[inner.Length + (extraLevels * level.Length)];
+        inner.AsSpan(0, 8).CopyTo(blob);
+        for (int i = 0; i < extraLevels; i++)
+        {
+            level.CopyTo(blob.AsSpan(8 + (i * level.Length)));
+        }
+
+        inner.AsSpan(8).CopyTo(blob.AsSpan(8 + (extraLevels * level.Length)));
+
+        Should.Throw<InvalidDataException>(() => GeoPackageGeometry.DecodeLine(blob, out _))
+            .Message.ShouldContain("contains another MultiLineString");
+    }
 }
