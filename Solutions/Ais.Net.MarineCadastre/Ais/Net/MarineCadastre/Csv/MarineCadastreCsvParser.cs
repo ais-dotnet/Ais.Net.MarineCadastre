@@ -42,6 +42,11 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreCsvReaderOptions opt
     private const uint HeadingNotAvailable = 511;
     private const int RateOfTurnNotAvailable = -128;
 
+    // The AIS "not available" values for speed (1023 tenths of a knot) and course (3600 tenths of a
+    // degree). Older MarineCadastre files write them out; newer ones leave the field empty.
+    private const double SpeedNotAvailable = 102.3;
+    private const double CourseNotAvailable = 360;
+
     /// <summary>10^0 to 10^22, every one exactly representable as a double.</summary>
     private static readonly double[] PowersOfTen =
     [
@@ -250,8 +255,12 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreCsvReaderOptions opt
     private static bool TryParseInt(ReadOnlySpan<byte> bytes, out int value) =>
         Utf8Parser.TryParse(bytes, out value, out int consumed) && consumed == bytes.Length;
 
-    private static float? ParseOptionalFloat(ReadOnlySpan<byte> bytes) =>
-        bytes.IsEmpty || !TryParseDouble(bytes, out double value) ? null : (float)value;
+    /// <summary>
+    /// Parses a speed or course. The result is <see langword="null"/> if the field is empty or
+    /// unreadable, or if the value is negative, NaN, or at or above <paramref name="notAvailable"/>.
+    /// </summary>
+    private static float? ParseOptionalFloat(ReadOnlySpan<byte> bytes, double notAvailable) =>
+        !bytes.IsEmpty && TryParseDouble(bytes, out double value) && value >= 0 && value < notAvailable ? (float)value : null;
 
     private static int ParseOptionalInt(ReadOnlySpan<byte> bytes, int missing)
     {
@@ -282,7 +291,9 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreCsvReaderOptions opt
 
     /// <summary>
     /// Parses <c>yyyy-MM-dd HH:mm:ss</c> (or with a <c>T</c> separator, optionally followed by a
-    /// fraction or <c>Z</c>) as UTC, which is what MarineCadastre writes.
+    /// fraction, a <c>Z</c> or both) as UTC, which is what MarineCadastre writes. The fraction is
+    /// dropped. Any other text after the seconds, such as a UTC offset, makes the value unreadable:
+    /// to ignore it would give the wrong time.
     /// </summary>
     private bool TryParseTimestamp(ReadOnlySpan<byte> bytes, out DateTimeOffset value)
     {
@@ -303,7 +314,7 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreCsvReaderOptions opt
             return false;
         }
 
-        if (hour > 23 || minute > 59 || second > 59)
+        if (hour > 23 || minute > 59 || second > 59 || !IsTimestampTail(bytes[19..]))
         {
             return false;
         }
@@ -323,6 +334,22 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreCsvReaderOptions opt
         long ticks = this.cachedDateTicks + ((((hour * 60) + minute) * 60) + second) * TimeSpan.TicksPerSecond;
         value = new DateTimeOffset(ticks, TimeSpan.Zero);
         return true;
+
+        static bool IsTimestampTail(ReadOnlySpan<byte> tail)
+        {
+            if (!tail.IsEmpty && tail[0] == '.')
+            {
+                int digits = tail[1..].IndexOfAnyExceptInRange((byte)'0', (byte)'9');
+                if (digits == 0 || tail.Length == 1)
+                {
+                    return false;
+                }
+
+                tail = digits < 0 ? default : tail[(1 + digits)..];
+            }
+
+            return tail.IsEmpty || (tail.Length == 1 && tail[0] == 'Z');
+        }
 
         static bool TryDigits(ReadOnlySpan<byte> digits, out int result)
         {
@@ -351,7 +378,8 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreCsvReaderOptions opt
             return false;
         }
 
-        if (!Utf8Parser.TryParse(fields[this.columns.Mmsi].In(line), out uint mmsi, out _))
+        ReadOnlySpan<byte> mmsiBytes = fields[this.columns.Mmsi].In(line).Trim((byte)' ');
+        if (!Utf8Parser.TryParse(mmsiBytes, out uint mmsi, out int mmsiConsumed) || mmsiConsumed != mmsiBytes.Length)
         {
             reason = CsvRowSkipReason.InvalidMmsi;
             return false;
@@ -382,8 +410,8 @@ internal sealed class MarineCadastreCsvParser(MarineCadastreCsvReaderOptions opt
             Mmsi = mmsi,
             Timestamp = timestamp,
             Position = position,
-            SpeedOverGround = ParseOptionalFloat(GetBytes(line, fields, this.columns.Sog)),
-            CourseOverGround = ParseOptionalFloat(GetBytes(line, fields, this.columns.Cog)),
+            SpeedOverGround = ParseOptionalFloat(GetBytes(line, fields, this.columns.Sog), SpeedNotAvailable),
+            CourseOverGround = ParseOptionalFloat(GetBytes(line, fields, this.columns.Cog), CourseNotAvailable),
             Heading = heading is >= 0 and < 360 ? (uint)heading : HeadingNotAvailable,
             NavigationStatus = status is >= 0 and <= 15 ? (NavigationStatus)status : NavigationStatus.NotDefined,
             IsClassB = !transceiver.IsEmpty && (transceiver[0] | 0x20) == 'b',

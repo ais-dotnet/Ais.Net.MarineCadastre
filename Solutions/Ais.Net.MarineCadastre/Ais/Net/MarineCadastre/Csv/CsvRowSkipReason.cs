@@ -16,12 +16,13 @@ public enum CsvRowSkipReason
     TooFewFields,
 
     /// <summary>
-    /// The <c>mmsi</c> field is empty, or it does not start with an unsigned integer.
+    /// The <c>mmsi</c> field is empty, or it is not an unsigned integer.
     /// </summary>
     InvalidMmsi,
 
     /// <summary>
-    /// The reader cannot read the <c>base_date_time</c> field as a date and time.
+    /// The reader cannot read the <c>base_date_time</c> field as a date and time. This includes a value
+    /// with a UTC offset, because the reader reads only UTC times.
     /// </summary>
     InvalidTimestamp,
 }
