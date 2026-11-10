@@ -268,6 +268,27 @@ public class MarineCadastreCsvReaderTests
     }
 
     [TestMethod]
+    public async Task ReadAsyncStopsOnCancellationWithoutDrainingTheBufferedRows()
+    {
+        // All the rows fit in the first block, so no further read of the stream can observe the token.
+        const int Rows = 500;
+        byte[] csv = Encoding.UTF8.GetBytes(Header + "\n" + string.Concat(Enumerable.Repeat(ClassARow + "\n", Rows)));
+        using CancellationTokenSource cancellation = new();
+        int received = 0;
+
+        await Should.ThrowAsync<OperationCanceledException>(async () =>
+        {
+            await foreach (AisMessageBase message in MarineCadastreCsvReader.ReadAsync(new MemoryStream(csv), cancellationToken: cancellation.Token))
+            {
+                received++;
+                await cancellation.CancelAsync();
+            }
+        });
+
+        received.ShouldBe(1);
+    }
+
+    [TestMethod]
     public void EveryMessageImplementsIAisTimestamp()
     {
         foreach (AisMessageBase message in Read(Header, ClassARow, ClassBRow))

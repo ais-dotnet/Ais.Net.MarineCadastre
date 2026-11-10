@@ -138,6 +138,11 @@ public static class MarineCadastreCsvReader
 
         while (true)
         {
+            // A block holds thousands of rows, so checking only when the buffer is refilled would keep
+            // parsing and yielding them long after the caller cancelled. The second check, below, is
+            // for a row that yields two messages: the caller may cancel on receiving the first.
+            cancellationToken.ThrowIfCancellationRequested();
+
             AisMessageBase? position;
             AisMessageBase? staticData;
 
@@ -165,6 +170,7 @@ public static class MarineCadastreCsvReader
 
             if (staticData is not null)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 yield return staticData;
             }
         }
