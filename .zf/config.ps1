@@ -1,0 +1,87 @@
+<#
+This example demonstrates a software build process using the 'ZeroFailed.Build.DotNet' extension
+to provide the features needed when building a .NET solutions.
+#>
+
+# Reproducible builds: pin SOURCE_DATE_EPOCH to the HEAD commit's timestamp, so the copyright year in
+# Endjin.Conventions.props (and anything else honouring the convention) derives from the commit being
+# built rather than from the clock, and rebuilding a commit yields identical bytes across a year
+# boundary. A value already present in the environment wins; outside a git checkout the clock is used.
+if (-not $env:SOURCE_DATE_EPOCH) {
+    $commitTimestamp = & git log -1 --format=%ct 2>$null
+    if ($LASTEXITCODE -eq 0 -and $commitTimestamp) {
+        $env:SOURCE_DATE_EPOCH = "$commitTimestamp".Trim()
+    }
+}
+
+$zerofailedExtensions = @(
+    @{
+        # References the extension from its GitHub repository. If not already installed, use latest version from 'main' will be downloaded.
+        Name = "ZeroFailed.Build.DotNet"
+        GitRepository = "https://github.com/zerofailed/ZeroFailed.Build.DotNet"
+        GitRef = "main"
+    }
+)
+
+# Load the tasks and process
+. ZeroFailed.tasks -ZfPath $here/.zf
+
+
+#
+# Build process control options
+#
+$SkipInit = $false
+$SkipVersion = $false
+$SkipBuild = $false
+$CleanBuild = $Clean
+$SkipTest = $false
+$SkipTestReport = $false
+$SkipAnalysis = $false
+$SkipPackage = $false
+
+#
+# Build process configuration
+#
+$SolutionToBuild = (Resolve-Path (Join-Path $here "./Solutions/Ais.Net.MarineCadastre.slnx")).Path
+$ProjectsToPublish = @()
+$NuSpecFilesToPackage = @()
+$NugetPublishSource = property ZF_NUGET_PUBLISH_SOURCE "$here/_local-nuget-feed"
+# reportgenerator matches a filter without a wildcard exactly, so the '*' is what brings in
+# Ais.Net.MarineCadastre.Gis. It also matches the test assembly, which is therefore excluded.
+$IncludeAssembliesInCodeCoverage = "Ais.Net.MarineCadastre*"
+$ExcludeAssembliesInCodeCoverage = "Ais.Net.MarineCadastre.Tests"
+
+
+# Customise the build process
+
+task . FullBuild
+
+# Formatting is part of the build: the compile phase fails when any file differs from what
+# `dotnet format` would write, so the .editorconfig rules stay enforced without a separate CI step.
+# Run `dotnet format Solutions/Ais.Net.MarineCadastre.slnx` locally to fix a failure.
+task PostBuild {
+    exec { dotnet format $SolutionToBuild --verify-no-changes --no-restore }
+}
+
+
+#
+# Build Process Extensibility Points - uncomment and implement as required
+#
+
+# task RunFirst {}
+# task PreInit {}
+# task PostInit {}
+# task PreVersion {}
+# task PostVersion {}
+# task PreBuild {}
+# task PreTest {}
+# task PostTest {}
+# task PreTestReport {}
+# task PostTestReport {}
+# task PreAnalysis {}
+# task PostAnalysis {}
+# task PrePackage {}
+# task PostPackage {}
+# task PrePublish {}
+# task PostPublish {}
+# task RunLast {}

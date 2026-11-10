@@ -1,0 +1,52 @@
+<Project>
+
+  <!--
+    Analysis settings for every project in the solution. Deliberately limited to these: the rest of the
+    conventions in Endjin.Conventions.props stay opt-in per project, because turning
+    warnings-as-errors on for the Benchmarks and Tests projects would be a behaviour change unrelated to
+    removing the Endjin package.
+  -->
+
+  <PropertyGroup>
+    <!--
+      EnableNETAnalyzers is already the default for net5.0 and later; stated explicitly so the intent
+      survives a future retarget. EnforceCodeStyleInBuild is not a default - it promotes the IDE* code
+      style rules from IDE-only suggestions to build diagnostics, with severities taken from
+      Solutions/.editorconfig (four are set to warning, including IDE0005).
+    -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!--
+      IDE0005 (remove unnecessary usings) is skipped on build unless the documentation file is
+      generated - the compiler reports EnableGenerateDocumentationFile instead, which becomes an error
+      wherever warnings are errors. Generating the file is the documented way to enable the rule. The
+      non-library projects already suppress CS1591 in their own NoWarn, so this costs them nothing.
+    -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!--
+      Marks the build as CI so the compiler normalises embedded paths, which is what makes a
+      deterministic build reproducible, and so RestoreLockedMode engages and CI restores against
+      packages.lock.json rather than silently resolving afresh. Lives here, not in the opt-in
+      Endjin.Conventions.props, because that file reaches only the published libraries. Both Azure
+      Pipelines (TF_BUILD) and GitHub Actions are honoured. An explicit -p:ContinuousIntegrationBuild=true
+      still wins, because these only apply when it has not already been set.
+    -->
+    <ContinuousIntegrationBuild Condition="'$(ContinuousIntegrationBuild)' == '' and '$(TF_BUILD)' == 'true'">true</ContinuousIntegrationBuild>
+    <ContinuousIntegrationBuild Condition="'$(ContinuousIntegrationBuild)' == '' and '$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!--
+      Every project keeps a packages.lock.json so that the transitive dependency graph of the shipped
+      packages, as well as of the tests and benchmarks, is recorded in the repository. CI restores in
+      locked mode and fails if the graph drifts; a local restore updates the lock file instead.
+    -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</RestoreLockedMode>
+  </PropertyGroup>
+
+</Project>

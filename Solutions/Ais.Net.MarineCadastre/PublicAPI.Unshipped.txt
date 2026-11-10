@@ -1,0 +1,54 @@
+#nullable enable
+Ais.Net.MarineCadastre.BoundingBox
+Ais.Net.MarineCadastre.BoundingBox.BoundingBox() -> void
+Ais.Net.MarineCadastre.BoundingBox.BoundingBox(double West, double South, double East, double North) -> void
+Ais.Net.MarineCadastre.BoundingBox.Contains(Ais.Net.Models.Abstractions.Position position) -> bool
+Ais.Net.MarineCadastre.BoundingBox.Deconstruct(out double West, out double South, out double East, out double North) -> void
+Ais.Net.MarineCadastre.BoundingBox.East.get -> double
+Ais.Net.MarineCadastre.BoundingBox.Equals(Ais.Net.MarineCadastre.BoundingBox other) -> bool
+Ais.Net.MarineCadastre.BoundingBox.Intersects(Ais.Net.MarineCadastre.BoundingBox other) -> bool
+Ais.Net.MarineCadastre.BoundingBox.North.get -> double
+Ais.Net.MarineCadastre.BoundingBox.South.get -> double
+Ais.Net.MarineCadastre.BoundingBox.West.get -> double
+Ais.Net.MarineCadastre.Csv.CsvRowSkipReason
+Ais.Net.MarineCadastre.Csv.CsvRowSkipReason.InvalidMmsi = 1 -> Ais.Net.MarineCadastre.Csv.CsvRowSkipReason
+Ais.Net.MarineCadastre.Csv.CsvRowSkipReason.InvalidTimestamp = 2 -> Ais.Net.MarineCadastre.Csv.CsvRowSkipReason
+Ais.Net.MarineCadastre.Csv.CsvRowSkipReason.TooFewFields = 0 -> Ais.Net.MarineCadastre.Csv.CsvRowSkipReason
+Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReader
+Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions
+Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.<Clone>$() -> Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions!
+Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.ClassAMessageType.get -> int
+Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.ClassAMessageType.init -> void
+Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.EmitStaticData.get -> bool
+Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.EmitStaticData.init -> void
+Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.Equals(Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions? other) -> bool
+Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.MarineCadastreCsvReaderOptions() -> void
+Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.OnRowSkipped.get -> System.Action<Ais.Net.MarineCadastre.Csv.SkippedCsvRow>?
+Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.OnRowSkipped.init -> void
+Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.ShipTypeSource.get -> Ais.Net.MarineCadastre.ShipTypeSource
+Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.ShipTypeSource.init -> void
+Ais.Net.MarineCadastre.Csv.SkippedCsvRow
+Ais.Net.MarineCadastre.Csv.SkippedCsvRow.Line.get -> System.ReadOnlySpan<byte>
+Ais.Net.MarineCadastre.Csv.SkippedCsvRow.LineNumber.get -> long
+Ais.Net.MarineCadastre.Csv.SkippedCsvRow.Reason.get -> Ais.Net.MarineCadastre.Csv.CsvRowSkipReason
+Ais.Net.MarineCadastre.Csv.SkippedCsvRow.SkippedCsvRow() -> void
+Ais.Net.MarineCadastre.Csv.SkippedCsvRow.SkippedCsvRow(long lineNumber, Ais.Net.MarineCadastre.Csv.CsvRowSkipReason reason, System.ReadOnlySpan<byte> line) -> void
+Ais.Net.MarineCadastre.ShipTypeSource
+Ais.Net.MarineCadastre.ShipTypeSource.CargoThenVesselType = 1 -> Ais.Net.MarineCadastre.ShipTypeSource
+Ais.Net.MarineCadastre.ShipTypeSource.VesselTypeThenCargo = 0 -> Ais.Net.MarineCadastre.ShipTypeSource
+override Ais.Net.MarineCadastre.BoundingBox.GetHashCode() -> int
+override Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.Equals(object? obj) -> bool
+override Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.GetHashCode() -> int
+override Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.ToString() -> string!
+static Ais.Net.MarineCadastre.BoundingBox.FromPositions(System.ReadOnlySpan<Ais.Net.Models.Abstractions.Position> positions) -> Ais.Net.MarineCadastre.BoundingBox
+static Ais.Net.MarineCadastre.BoundingBox.operator !=(Ais.Net.MarineCadastre.BoundingBox left, Ais.Net.MarineCadastre.BoundingBox right) -> bool
+static Ais.Net.MarineCadastre.BoundingBox.operator ==(Ais.Net.MarineCadastre.BoundingBox left, Ais.Net.MarineCadastre.BoundingBox right) -> bool
+static Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReader.Read(System.IO.Stream! stream, Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions? options = null) -> System.Collections.Generic.IEnumerable<Ais.Net.Models.AisMessageBase!>!
+static Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReader.ReadAsync(System.IO.Stream! stream, Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<Ais.Net.Models.AisMessageBase!>!
+static Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReader.ReadFile(string! path, Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions? options = null) -> System.Collections.Generic.IEnumerable<Ais.Net.Models.AisMessageBase!>!
+static Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReader.ReadFileAsync(string! path, Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<Ais.Net.Models.AisMessageBase!>!
+static Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.Default.get -> Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions!
+static Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.operator !=(Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions? left, Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions? right) -> bool
+static Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions.operator ==(Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions? left, Ais.Net.MarineCadastre.Csv.MarineCadastreCsvReaderOptions? right) -> bool
+~override Ais.Net.MarineCadastre.BoundingBox.Equals(object obj) -> bool
+~override Ais.Net.MarineCadastre.BoundingBox.ToString() -> string
